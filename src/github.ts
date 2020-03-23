@@ -55,7 +55,7 @@ export function DefaultOctokit({ ...options }): any {
 export async function listAllMatchingRepos({
   patterns,
   octokit,
-  affiliation = "owner,collaborator",
+  affiliation = "owner,collaborator,organization_member",
   per_page = 30
 }: {
   patterns: string[];
