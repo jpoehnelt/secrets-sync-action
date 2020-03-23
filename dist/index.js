@@ -2124,8 +2124,9 @@ function run() {
                 octokit
             });
             /* istanbul ignore next */
-            if (!repos) {
-                core.setFailed(`Repos: No matches with "${config.REPOSITORIES.join(", ")}"`);
+            if (repos.length === 0) {
+                const repoPatternString = config.REPOSITORIES.join(", ");
+                core.setFailed(`Repos: No matches with "${repoPatternString}". Check your token and regex.`);
                 return;
             }
             // eslint-disable-next-line @typescript-eslint/promise-function-async
@@ -7421,7 +7422,7 @@ function DefaultOctokit(_a) {
     return new RetryOctokit(Object.assign(Object.assign({}, defaultOptions), options));
 }
 exports.DefaultOctokit = DefaultOctokit;
-function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator", per_page = 30 }) {
+function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", per_page = 30 }) {
     return __awaiter(this, void 0, void 0, function* () {
         const repos = yield listAllReposForAuthenticatedUser({
             octokit,
