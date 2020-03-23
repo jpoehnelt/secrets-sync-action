@@ -1,4 +1,4 @@
-# Secret Sync Action
+# Secrets Sync Action
 
 ![Build](https://github.com/google/secrets-sync-action/workflows/Build/badge.svg)
 ![Release](https://github.com/google/secrets-sync-action/workflows/Release/badge.svg)
