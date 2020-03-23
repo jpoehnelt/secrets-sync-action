@@ -46,9 +46,10 @@ export async function run(): Promise<void> {
     });
 
     /* istanbul ignore next */
-    if (!repos) {
+    if (repos.length === 0) {
+      const repoPatternString = config.REPOSITORIES.join(", ");
       core.setFailed(
-        `Repos: No matches with "${config.REPOSITORIES.join(", ")}"`
+        `Repos: No matches with "${repoPatternString}". Check your token and regex.`
       );
       return;
     }
