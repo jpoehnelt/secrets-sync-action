@@ -1,0 +1,14 @@
+name: "Build"
+on: 
+  [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: |
+        npm i
+        npm run all
+    - uses: codecov/codecov-action@v1
+      with:
+        fail_ci_if_error: true

@@ -1,0 +1,52 @@
+name: "Release"
+on: 
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with: 
+        ref: 'master'
+    - name: Keep dist up-to-date
+      run: |
+        npm i
+        npm run build
+        npm run pack
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add dist/index.js
+        git commit -m "chore: publish dist" || echo "nothing to commit"
+        git push origin master
+    - uses: actions/checkout@v2
+      with:
+        ref: master
+    - name: Test Action
+      uses: ./
+      with: 
+        SECRETS: |
+          ^FOO$
+          ^GITHUB_.*
+        REPOSITORIES: |
+          ${{github.repository}}
+        DRY_RUN: true
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_NO_SCOPES }}
+      env:
+        FOO: ${{github.run_id}}
+        FOOBAR: BAZ
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: master 
+    - name: Semantic Release
+      uses: cycjimmy/semantic-release-action@v2
+      with:
+        extra_plugins: |
+          "@semantic-release/commit-analyzer"
+          "@semantic-release/release-notes-generator"
+          "@semantic-release/git
+          "@semantic-release/github
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
