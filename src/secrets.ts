@@ -28,7 +28,7 @@ export function getSecrets(
   const regexPatterns = patterns.map(s => new RegExp(s));
   const keys = Object.keys(env);
 
-  core.debug(`Available env keys: ${JSON.stringify(keys)}`);
+  core.info(`Available env keys: ${JSON.stringify(keys)}`);
 
   return keys
     .filter((k: string) => {
