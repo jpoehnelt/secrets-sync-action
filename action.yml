@@ -1,5 +1,9 @@
 # action.yml
 name: "Secrets Sync Action"
+author: Justin Poehnelt
+branding:
+  icon: 'copy'  
+  color: 'red'
 description: "Copies secrets from the action's environment to many other repos."
 inputs:
   github_token:
