@@ -69,6 +69,10 @@ export async function listAllMatchingRepos({
     per_page
   });
 
+  core.debug(
+    `Available repositories: ${JSON.stringify(repos.map(r => r.full_name))}`
+  );
+
   return filterReposByPatterns(repos, patterns);
 }
 
@@ -123,6 +127,8 @@ export async function setSecretsForRepo(
 
   for (const k of Object.keys(secrets)) {
     const encrypted_value = encrypt(secrets[k], publicKey.key);
+
+    core.debug(`Set \`${k} = ***\` on ${repo.full_name}`);
 
     if (!dry_run) {
       await octokit.actions.createOrUpdateSecretForRepo({
