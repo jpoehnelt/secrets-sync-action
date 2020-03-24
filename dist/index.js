@@ -5998,7 +5998,9 @@ const core = __importStar(__webpack_require__(470));
  */
 function getSecrets(patterns, env = process.env) {
     const regexPatterns = patterns.map(s => new RegExp(s));
-    return Object.keys(env)
+    const keys = Object.keys(env);
+    core.debug(`Available env keys: ${JSON.stringify(keys)}`);
+    return keys
         .filter((k) => {
         return env[k] && regexPatterns.filter(r => r.test(k)).length;
     })
@@ -7429,6 +7431,7 @@ function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collabor
             affiliation,
             per_page
         });
+        core.debug(`Available repositories: ${JSON.stringify(repos.map(r => r.full_name))}`);
         return filterReposByPatterns(repos, patterns);
     });
 }
@@ -7465,6 +7468,7 @@ function setSecretsForRepo(octokit, secrets, repo, dry_run) {
         })).data;
         for (const k of Object.keys(secrets)) {
             const encrypted_value = utils_1.encrypt(secrets[k], publicKey.key);
+            core.debug(`Set \`${k} = ***\` on ${repo.full_name}`);
             if (!dry_run) {
                 yield octokit.actions.createOrUpdateSecretForRepo({
                     owner,
