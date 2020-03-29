@@ -2141,12 +2141,8 @@ function run() {
             yield Promise.all(repos.map((repo) => __awaiter(this, void 0, void 0, function* () { return github_1.setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN); })));
         }
         catch (error) {
-            /* istanbul ignore next */
-            () => {
-                // https://github.com/gotwarlost/istanbul/issues/361
-                core.error(error);
-                core.setFailed(error.message);
-            };
+            core.error(error);
+            core.setFailed(error.message);
         }
     });
 }
