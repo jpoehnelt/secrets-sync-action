@@ -77,12 +77,8 @@ export async function run(): Promise<void> {
       )
     );
   } catch (error) {
-    /* istanbul ignore next */
-    () => {
-      // https://github.com/gotwarlost/istanbul/issues/361
       core.error(error);
       core.setFailed(error.message);
-    };
   }
 }
 
