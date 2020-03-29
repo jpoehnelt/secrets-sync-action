@@ -77,8 +77,8 @@ export async function run(): Promise<void> {
       )
     );
   } catch (error) {
-      core.error(error);
-      core.setFailed(error.message);
+    core.error(error);
+    core.setFailed(error.message);
   }
 }
 
