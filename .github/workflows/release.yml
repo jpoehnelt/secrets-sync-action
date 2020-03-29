@@ -32,7 +32,7 @@ jobs:
         REPOSITORIES: |
           ${{github.repository}}
         DRY_RUN: true
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_NO_SCOPES }}
       env:
         FOO: ${{github.run_id}}
         FOOBAR: BAZ
