@@ -13,7 +13,7 @@
   },
   "license": "Apache 2.0",
   "author": "Justin Poehnelt",
-  "main": "lib/main.js",
+  "main": "lib/index.js",
   "scripts": {
     "all": "npm run build && npm run format-check && npm run lint && npm test && npm run pack",
     "build": "tsc",

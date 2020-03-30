@@ -77,9 +77,9 @@ export async function run(): Promise<void> {
       )
     );
   } catch (error) {
+    /* istanbul ignore next */
     core.error(error);
+    /* istanbul ignore next */
     core.setFailed(error.message);
   }
 }
-
-run();

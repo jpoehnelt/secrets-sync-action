@@ -34,7 +34,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(198);
+/******/ 		return __webpack_require__(526);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -2141,13 +2141,14 @@ function run() {
             yield Promise.all(repos.map((repo) => __awaiter(this, void 0, void 0, function* () { return github_1.setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN); })));
         }
         catch (error) {
+            /* istanbul ignore next */
             core.error(error);
+            /* istanbul ignore next */
             core.setFailed(error.message);
         }
     });
 }
 exports.run = run;
-run();
 
 
 /***/ }),
@@ -5958,6 +5959,19 @@ module.exports.Collection = Hook.Collection
 
 /***/ }),
 
+/***/ 526:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const main_1 = __webpack_require__(198);
+/* istanbul ignore next */
+main_1.run();
+
+
+/***/ }),
+
 /***/ 545:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -7420,7 +7434,7 @@ function DefaultOctokit(_a) {
     return new RetryOctokit(Object.assign(Object.assign({}, defaultOptions), options));
 }
 exports.DefaultOctokit = DefaultOctokit;
-function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", per_page = 30 }) {
+function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", per_page = 30 /* istanbul ignore */ }) {
     return __awaiter(this, void 0, void 0, function* () {
         const repos = yield listAllReposForAuthenticatedUser({
             octokit,
