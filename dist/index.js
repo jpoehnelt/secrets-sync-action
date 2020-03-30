@@ -7434,7 +7434,7 @@ function DefaultOctokit(_a) {
     return new RetryOctokit(Object.assign(Object.assign({}, defaultOptions), options));
 }
 exports.DefaultOctokit = DefaultOctokit;
-function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", per_page = 30 /* istanbul ignore */ }) {
+function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", per_page = 30 }) {
     return __awaiter(this, void 0, void 0, function* () {
         const repos = yield listAllReposForAuthenticatedUser({
             octokit,
