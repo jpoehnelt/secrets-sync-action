@@ -7434,29 +7434,29 @@ function DefaultOctokit(_a) {
     return new RetryOctokit(Object.assign(Object.assign({}, defaultOptions), options));
 }
 exports.DefaultOctokit = DefaultOctokit;
-function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", per_page = 30 }) {
+function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", pageSize = 30 }) {
     return __awaiter(this, void 0, void 0, function* () {
         const repos = yield listAllReposForAuthenticatedUser({
             octokit,
             affiliation,
-            per_page
+            pageSize
         });
         core.info(`Available repositories: ${JSON.stringify(repos.map(r => r.full_name))}`);
         return filterReposByPatterns(repos, patterns);
     });
 }
 exports.listAllMatchingRepos = listAllMatchingRepos;
-function listAllReposForAuthenticatedUser({ octokit, affiliation, per_page }) {
+function listAllReposForAuthenticatedUser({ octokit, affiliation, pageSize }) {
     return __awaiter(this, void 0, void 0, function* () {
         const repos = [];
-        for (let i = 1; i < 10; i++) {
+        for (let page = 1;; page++) {
             const response = yield octokit.repos.listForAuthenticatedUser({
                 affiliation,
-                page: i,
-                pageSize: per_page
+                page,
+                pageSize
             });
             repos.push(...response.data);
-            if (response.data.length < per_page) {
+            if (response.data.length < pageSize) {
                 break;
             }
         }

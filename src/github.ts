@@ -56,17 +56,17 @@ export async function listAllMatchingRepos({
   patterns,
   octokit,
   affiliation = "owner,collaborator,organization_member",
-  per_page = 30
+  pageSize = 30
 }: {
   patterns: string[];
   octokit: any;
   affiliation?: string;
-  per_page?: number;
+  pageSize?: number;
 }): Promise<any[]> {
   const repos = await listAllReposForAuthenticatedUser({
     octokit,
     affiliation,
-    per_page
+    pageSize
   });
 
   core.info(
@@ -79,23 +79,23 @@ export async function listAllMatchingRepos({
 export async function listAllReposForAuthenticatedUser({
   octokit,
   affiliation,
-  per_page
+  pageSize
 }: {
   octokit: any;
   affiliation: string;
-  per_page: number;
+  pageSize: number;
 }): Promise<any[]> {
   const repos: any[] = [];
 
-  for (let i = 1; i < 10; i++) {
+  for (let page = 1; ; page++) {
     const response = await octokit.repos.listForAuthenticatedUser({
       affiliation,
-      page: i,
-      pageSize: per_page
+      page,
+      pageSize
     });
     repos.push(...response.data);
 
-    if (response.data.length < per_page) {
+    if (response.data.length < pageSize) {
       break;
     }
   }
