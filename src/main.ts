@@ -18,6 +18,7 @@ import * as core from "@actions/core";
 
 import {
   DefaultOctokit,
+  Repository,
   listAllMatchingRepos,
   setSecretsForRepo
 } from "./github";
@@ -40,10 +41,19 @@ export async function run(): Promise<void> {
       auth: config.GITHUB_TOKEN
     });
 
-    const repos = await listAllMatchingRepos({
-      patterns: config.REPOSITORIES,
-      octokit
-    });
+    let repos: Repository[];
+    if (config.REPOSITORIES_LIST_REGEX) {
+      repos = await listAllMatchingRepos({
+        patterns: config.REPOSITORIES,
+        octokit
+      });
+    } else {
+      repos = config.REPOSITORIES.map(s => {
+        return {
+          full_name: s
+        };
+      });
+    }
 
     /* istanbul ignore next */
     if (repos.length === 0) {
@@ -54,13 +64,13 @@ export async function run(): Promise<void> {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/promise-function-async
     const repoNames = repos.map(r => r.full_name);
 
     core.info(
       JSON.stringify(
         {
           REPOSITORIES: config.REPOSITORIES,
+          REPOSITORIES_LIST_REGEX: config.REPOSITORIES_LIST_REGEX,
           SECRETS: config.SECRETS,
           DRY_RUN: config.DRY_RUN,
           FOUND_REPOS: repoNames,

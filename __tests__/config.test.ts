@@ -27,6 +27,7 @@ function clearInputs() {
 describe("getConfig", () => {
   const SECRETS = ["FOO.*", "^BAR$"];
   const REPOSITORIES = ["google/baz.*", "^google/foo$"];
+  const REPOSITORIES_LIST_REGEX = true;
   const GITHUB_TOKEN = "token";
   const DRY_RUN = false;
 
@@ -34,6 +35,7 @@ describe("getConfig", () => {
     INPUT_GITHUB_TOKEN: GITHUB_TOKEN,
     INPUT_SECRETS: SECRETS.join("\n"),
     INPUT_REPOSITORIES: REPOSITORIES.join("\n"),
+    INPUT_REPOSITORIES_LIST_REGEX: String(REPOSITORIES_LIST_REGEX),
     INPUT_DRY_RUN: String(DRY_RUN)
   };
 
@@ -56,6 +58,7 @@ describe("getConfig", () => {
       GITHUB_TOKEN,
       SECRETS,
       REPOSITORIES,
+      REPOSITORIES_LIST_REGEX,
       DRY_RUN
     });
   });

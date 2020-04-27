@@ -20,6 +20,10 @@ import { Octokit } from "@octokit/rest";
 import { encrypt } from "./utils";
 import { retry } from "@octokit/plugin-retry";
 
+export interface Repository {
+  full_name: string;
+}
+
 const RetryOctokit = Octokit.plugin(retry);
 
 /* istanbul ignore next */
@@ -47,7 +51,6 @@ const defaultOptions = {
   }
 };
 
-// eslint-disable-next-line @typescript-eslint/promise-function-async
 export function DefaultOctokit({ ...options }): any {
   return new RetryOctokit({ ...defaultOptions, ...options });
 }
@@ -62,7 +65,7 @@ export async function listAllMatchingRepos({
   octokit: any;
   affiliation?: string;
   pageSize?: number;
-}): Promise<any[]> {
+}): Promise<Repository[]> {
   const repos = await listAllReposForAuthenticatedUser({
     octokit,
     affiliation,
@@ -84,8 +87,8 @@ export async function listAllReposForAuthenticatedUser({
   octokit: any;
   affiliation: string;
   pageSize: number;
-}): Promise<any[]> {
-  const repos: any[] = [];
+}): Promise<Repository[]> {
+  const repos: Repository[] = [];
 
   for (let page = 1; ; page++) {
     const response = await octokit.repos.listForAuthenticatedUser({
@@ -102,7 +105,10 @@ export async function listAllReposForAuthenticatedUser({
   return repos;
 }
 
-export function filterReposByPatterns(repos: any[], patterns: string[]): any[] {
+export function filterReposByPatterns(
+  repos: Repository[],
+  patterns: string[]
+): Repository[] {
   const regexPatterns = patterns.map(s => new RegExp(s));
 
   return repos.filter(
@@ -113,7 +119,7 @@ export function filterReposByPatterns(repos: any[], patterns: string[]): any[] {
 export async function setSecretsForRepo(
   octokit: any,
   secrets: { [key: string]: string },
-  repo: any,
+  repo: Repository,
   dry_run: boolean
 ): Promise<void> {
   const [owner, name] = repo.full_name.split("/");
