@@ -2119,20 +2119,30 @@ function run() {
             const octokit = github_1.DefaultOctokit({
                 auth: config.GITHUB_TOKEN
             });
-            const repos = yield github_1.listAllMatchingRepos({
-                patterns: config.REPOSITORIES,
-                octokit
-            });
+            let repos;
+            if (config.REPOSITORIES_LIST_REGEX) {
+                repos = yield github_1.listAllMatchingRepos({
+                    patterns: config.REPOSITORIES,
+                    octokit
+                });
+            }
+            else {
+                repos = config.REPOSITORIES.map(s => {
+                    return {
+                        full_name: s
+                    };
+                });
+            }
             /* istanbul ignore next */
             if (repos.length === 0) {
                 const repoPatternString = config.REPOSITORIES.join(", ");
                 core.setFailed(`Repos: No matches with "${repoPatternString}". Check your token and regex.`);
                 return;
             }
-            // eslint-disable-next-line @typescript-eslint/promise-function-async
             const repoNames = repos.map(r => r.full_name);
             core.info(JSON.stringify({
                 REPOSITORIES: config.REPOSITORIES,
+                REPOSITORIES_LIST_REGEX: config.REPOSITORIES_LIST_REGEX,
                 SECRETS: config.SECRETS,
                 DRY_RUN: config.DRY_RUN,
                 FOUND_REPOS: repoNames,
@@ -5495,6 +5505,9 @@ function getConfig() {
         GITHUB_TOKEN: core.getInput("GITHUB_TOKEN", { required: true }),
         SECRETS: core.getInput("SECRETS", { required: true }).split("\n"),
         REPOSITORIES: core.getInput("REPOSITORIES", { required: true }).split("\n"),
+        REPOSITORIES_LIST_REGEX: ["1", "true"].includes(core
+            .getInput("REPOSITORIES_LIST_REGEX", { required: false })
+            .toLowerCase()),
         DRY_RUN: ["1", "true"].includes(core.getInput("DRY_RUN", { required: false }).toLowerCase())
     };
     if (config.DRY_RUN) {
@@ -7428,7 +7441,6 @@ const defaultOptions = {
         onAbuseLimit
     }
 };
-// eslint-disable-next-line @typescript-eslint/promise-function-async
 function DefaultOctokit(_a) {
     var options = __rest(_a, []);
     return new RetryOctokit(Object.assign(Object.assign({}, defaultOptions), options));

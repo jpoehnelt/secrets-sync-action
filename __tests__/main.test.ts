@@ -44,8 +44,40 @@ test("run should succeed with a repo and secret", async () => {
     GITHUB_TOKEN: "token",
     SECRETS: ["BAZ"],
     REPOSITORIES: [".*"],
+    REPOSITORIES_LIST_REGEX: true,
     DRY_RUN: false
   });
   await run();
+
+  expect(github.listAllMatchingRepos as jest.Mock).toBeCalledTimes(1);
+  expect((github.setSecretsForRepo as jest.Mock).mock.calls[0][2]).toEqual(
+    fixture[0].response
+  );
+
+  expect(process.exitCode).toBe(undefined);
+});
+
+test("run should succeed with a repo and secret with repository_list_regex as false", async () => {
+  (github.setSecretsForRepo as jest.Mock) = jest
+    .fn()
+    .mockImplementation(async () => null);
+
+  (secrets.getSecrets as jest.Mock) = jest.fn().mockReturnValue({
+    BAZ: "bar"
+  });
+
+  (config.getConfig as jest.Mock) = jest.fn().mockReturnValue({
+    GITHUB_TOKEN: "token",
+    SECRETS: ["BAZ"],
+    REPOSITORIES: [fixture[0].response.full_name],
+    REPOSITORIES_LIST_REGEX: false,
+    DRY_RUN: false
+  });
+  await run();
+
+  expect((github.setSecretsForRepo as jest.Mock).mock.calls[0][2]).toEqual({
+    full_name: fixture[0].response.full_name
+  });
+
   expect(process.exitCode).toBe(undefined);
 });

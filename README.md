@@ -16,7 +16,13 @@ A Github Action that can sync secrets from one repository to many others. This a
 
 ### `repositories`
 
-**Required** New line deliminated regex expressions to select repositories. Repositires are limited to those in whcich the token user is an owner or collaborator.
+**Required** New line deliminated regex expressions to select repositories. Repositires are limited to those in whcich the token user is an owner or collaborator. Set `repositories_list_regex` to `False` to use a hardcoded list of repositories.
+
+### `repositories_list_regex`
+If this value is `true` (default), the action will find all
+repositories available to the token user and filter based upon the regex
+provided. If it is false, it is expected that `repositories` will be an a
+new line deliminated list in the form of org/name.
 
 ### `secrets`
 
