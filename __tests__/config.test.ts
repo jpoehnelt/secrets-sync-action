@@ -30,13 +30,15 @@ describe("getConfig", () => {
   const REPOSITORIES_LIST_REGEX = true;
   const GITHUB_TOKEN = "token";
   const DRY_RUN = false;
+  const RETRIES = 3;
 
   const inputs = {
     INPUT_GITHUB_TOKEN: GITHUB_TOKEN,
     INPUT_SECRETS: SECRETS.join("\n"),
     INPUT_REPOSITORIES: REPOSITORIES.join("\n"),
     INPUT_REPOSITORIES_LIST_REGEX: String(REPOSITORIES_LIST_REGEX),
-    INPUT_DRY_RUN: String(DRY_RUN)
+    INPUT_DRY_RUN: String(DRY_RUN),
+    INPUT_RETRIES: String(RETRIES)
   };
 
   beforeEach(() => {
@@ -59,7 +61,8 @@ describe("getConfig", () => {
       SECRETS,
       REPOSITORIES,
       REPOSITORIES_LIST_REGEX,
-      DRY_RUN
+      DRY_RUN,
+      RETRIES
     });
   });
 

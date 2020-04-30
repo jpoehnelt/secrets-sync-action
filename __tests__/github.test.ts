@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import * as config from "../src/config";
+
 import {
   DefaultOctokit,
   filterReposByPatterns,
@@ -25,12 +27,22 @@ import {
 import fixture from "@octokit/fixtures/scenarios/api.github.com/get-repository/normalized-fixture.json";
 import nock from "nock";
 
-const octokit = DefaultOctokit({
-  auth: ""
-});
+let octokit: any;
 
 beforeAll(() => {
   nock.disableNetConnect();
+  (config.getConfig as jest.Mock) = jest.fn().mockReturnValue({
+    GITHUB_TOKEN: "token",
+    SECRETS: ["BAZ"],
+    REPOSITORIES: [".*"],
+    REPOSITORIES_LIST_REGEX: true,
+    DRY_RUN: false,
+    RETRIES: 3
+  });
+
+  octokit = DefaultOctokit({
+    auth: ""
+  });
 });
 
 afterAll(() => {

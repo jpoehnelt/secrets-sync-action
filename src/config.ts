@@ -22,11 +22,13 @@ export interface Config {
   REPOSITORIES: string[];
   REPOSITORIES_LIST_REGEX: boolean;
   DRY_RUN: boolean;
+  RETRIES: number;
 }
 
 export function getConfig(): Config {
   const config = {
     GITHUB_TOKEN: core.getInput("GITHUB_TOKEN", { required: true }),
+    RETRIES: Number(core.getInput("RETRIES")),
     SECRETS: core.getInput("SECRETS", { required: true }).split("\n"),
     REPOSITORIES: core.getInput("REPOSITORIES", { required: true }).split("\n"),
     REPOSITORIES_LIST_REGEX: ["1", "true"].includes(

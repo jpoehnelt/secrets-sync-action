@@ -45,7 +45,8 @@ test("run should succeed with a repo and secret", async () => {
     SECRETS: ["BAZ"],
     REPOSITORIES: [".*"],
     REPOSITORIES_LIST_REGEX: true,
-    DRY_RUN: false
+    DRY_RUN: false,
+    RETRIES: 3
   });
   await run();
 
