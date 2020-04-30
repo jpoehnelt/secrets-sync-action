@@ -7431,18 +7431,20 @@ function DefaultOctokit(_a) {
     function onRateLimit(retryAfter, options) {
         core.warning(`Request quota exhausted for request ${options.method} ${options.url}`);
         if (options.request.retryCount < retries) {
-            core.warning(`Retrying after ${retryAfter} seconds!`);
+            core.warning(`Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`);
             return true;
         }
+        core.warning(`Did not retry request ${options.method} ${options.url}`);
         return false;
     }
     /* istanbul ignore next */
     function onAbuseLimit(retryAfter, options) {
         core.warning(`Abuse detected for request ${options.method} ${options.url}`);
         if (options.request.retryCount < retries) {
-            core.warning(`Retrying after ${retryAfter} seconds!`);
+            core.warning(`Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`);
             return true;
         }
+        core.warning(`Did not retry request ${options.method} ${options.url}`);
         return false;
     }
     const defaultOptions = {
