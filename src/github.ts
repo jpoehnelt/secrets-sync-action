@@ -27,7 +27,7 @@ export interface Repository {
 
 const RetryOctokit = Octokit.plugin(retry);
 
-export function DefaultOctokit({ ...options }): any {
+export function DefaultOctokit({ ...octokitOptions }): any {
   const retries = getConfig().RETRIES;
 
   /* istanbul ignore next */
@@ -61,7 +61,7 @@ export function DefaultOctokit({ ...options }): any {
     }
   };
 
-  return new RetryOctokit({ ...defaultOptions, ...options });
+  return new RetryOctokit({ ...defaultOptions, ...octokitOptions });
 }
 
 export async function listAllMatchingRepos({

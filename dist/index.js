@@ -5503,6 +5503,7 @@ const core = __importStar(__webpack_require__(470));
 function getConfig() {
     const config = {
         GITHUB_TOKEN: core.getInput("GITHUB_TOKEN", { required: true }),
+        RETRIES: Number(core.getInput("RETRIES")),
         SECRETS: core.getInput("SECRETS", { required: true }).split("\n"),
         REPOSITORIES: core.getInput("REPOSITORIES", { required: true }).split("\n"),
         REPOSITORIES_LIST_REGEX: ["1", "true"].includes(core
@@ -7420,30 +7421,37 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
 const rest_1 = __webpack_require__(889);
 const utils_1 = __webpack_require__(611);
+const config_1 = __webpack_require__(478);
 const plugin_retry_1 = __webpack_require__(755);
 const RetryOctokit = rest_1.Octokit.plugin(plugin_retry_1.retry);
-/* istanbul ignore next */
-function onRateLimit(retryAfter, options) {
-    core.warning(`Request quota exhausted for request ${options.method} ${options.url}`);
-    if (options.request.retryCount === 0) {
-        core.warning(`Retrying after ${retryAfter} seconds!`);
-        return true;
-    }
-    return false;
-}
-/* istanbul ignore next */
-function onAbuseLimit(_, options) {
-    core.warning(`Abuse detected for request ${options.method} ${options.url}`);
-}
-const defaultOptions = {
-    throttle: {
-        onRateLimit,
-        onAbuseLimit
-    }
-};
 function DefaultOctokit(_a) {
-    var options = __rest(_a, []);
-    return new RetryOctokit(Object.assign(Object.assign({}, defaultOptions), options));
+    var octokitOptions = __rest(_a, []);
+    const retries = config_1.getConfig().RETRIES;
+    /* istanbul ignore next */
+    function onRateLimit(retryAfter, options) {
+        core.warning(`Request quota exhausted for request ${options.method} ${options.url}`);
+        if (options.request.retryCount < retries) {
+            core.warning(`Retrying after ${retryAfter} seconds!`);
+            return true;
+        }
+        return false;
+    }
+    /* istanbul ignore next */
+    function onAbuseLimit(retryAfter, options) {
+        core.warning(`Abuse detected for request ${options.method} ${options.url}`);
+        if (options.request.retryCount < retries) {
+            core.warning(`Retrying after ${retryAfter} seconds!`);
+            return true;
+        }
+        return false;
+    }
+    const defaultOptions = {
+        throttle: {
+            onRateLimit,
+            onAbuseLimit
+        }
+    };
+    return new RetryOctokit(Object.assign(Object.assign({}, defaultOptions), octokitOptions));
 }
 exports.DefaultOctokit = DefaultOctokit;
 function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", pageSize = 30 }) {
