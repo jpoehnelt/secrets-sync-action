@@ -18,6 +18,7 @@ import * as core from "@actions/core";
 
 import { Octokit } from "@octokit/rest";
 import { encrypt } from "./utils";
+import { getConfig } from "./config";
 import { retry } from "@octokit/plugin-retry";
 
 export interface Repository {
@@ -26,33 +27,41 @@ export interface Repository {
 
 const RetryOctokit = Octokit.plugin(retry);
 
-/* istanbul ignore next */
-function onRateLimit(retryAfter: any, options: any): boolean {
-  core.warning(
-    `Request quota exhausted for request ${options.method} ${options.url}`
-  );
+export function DefaultOctokit({ ...octokitOptions }): any {
+  const retries = getConfig().RETRIES;
 
-  if (options.request.retryCount === 0) {
-    core.warning(`Retrying after ${retryAfter} seconds!`);
-    return true;
+  /* istanbul ignore next */
+  function onRateLimit(retryAfter: any, options: any): boolean {
+    core.warning(
+      `Request quota exhausted for request ${options.method} ${options.url}`
+    );
+
+    if (options.request.retryCount < retries) {
+      core.warning(`Retrying after ${retryAfter} seconds!`);
+      return true;
+    }
+    return false;
   }
-  return false;
-}
 
-/* istanbul ignore next */
-function onAbuseLimit(_: any, options: any): void {
-  core.warning(`Abuse detected for request ${options.method} ${options.url}`);
-}
+  /* istanbul ignore next */
+  function onAbuseLimit(retryAfter: any, options: any): boolean {
+    core.warning(`Abuse detected for request ${options.method} ${options.url}`);
 
-const defaultOptions = {
-  throttle: {
-    onRateLimit,
-    onAbuseLimit
+    if (options.request.retryCount < retries) {
+      core.warning(`Retrying after ${retryAfter} seconds!`);
+      return true;
+    }
+    return false;
   }
-};
 
-export function DefaultOctokit({ ...options }): any {
-  return new RetryOctokit({ ...defaultOptions, ...options });
+  const defaultOptions = {
+    throttle: {
+      onRateLimit,
+      onAbuseLimit
+    }
+  };
+
+  return new RetryOctokit({ ...defaultOptions, ...octokitOptions });
 }
 
 export async function listAllMatchingRepos({

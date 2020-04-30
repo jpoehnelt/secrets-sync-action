@@ -34,6 +34,11 @@ inputs:
     description: |
       Run everything except for secret create and update functionality.
     required: false
+  retries:
+    description: |
+      The number of retries to attempt when making Github calls.
+    default: "3"
+    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'

@@ -28,6 +28,10 @@ new line deliminated list in the form of org/name.
 
 **Required** New line deliminated regex expressions to select values from `process.env`. Use the action env to pass secrets from the repository in which this action runs with the `env` attribute of the step.
 
+### `retries`
+
+The number of retries to attempt when making Github calls when triggering rate limits or abuse limits. Defaults to 3.
+
 ### `dry_run`
 
 Run everything except for secret create and update functionality.
