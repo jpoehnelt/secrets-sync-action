@@ -37,9 +37,12 @@ export function DefaultOctokit({ ...octokitOptions }): any {
     );
 
     if (options.request.retryCount < retries) {
-      core.warning(`Retrying after ${retryAfter} seconds!`);
+      core.warning(
+        `Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`
+      );
       return true;
     }
+    core.warning(`Did not retry request ${options.method} ${options.url}`);
     return false;
   }
 
@@ -48,9 +51,12 @@ export function DefaultOctokit({ ...octokitOptions }): any {
     core.warning(`Abuse detected for request ${options.method} ${options.url}`);
 
     if (options.request.retryCount < retries) {
-      core.warning(`Retrying after ${retryAfter} seconds!`);
+      core.warning(
+        `Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`
+      );
       return true;
     }
+    core.warning(`Did not retry request ${options.method} ${options.url}`);
     return false;
   }
 
