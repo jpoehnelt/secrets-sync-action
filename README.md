@@ -35,7 +35,7 @@ The number of retries to attempt when making Github calls when triggering rate l
 
 ### `concurrency`
 
-The number of allowed concurent calls to the set secret endpoint. Lower this number to avoid abuse limits. Defaults to 10.
+The number of allowed concurrent calls to the set secret endpoint. Lower this number to avoid abuse limits. Defaults to 10.
 
 ### `dry_run`
 
