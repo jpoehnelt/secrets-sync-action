@@ -81,11 +81,9 @@ export async function run(): Promise<void> {
       )
     );
 
-    await Promise.all(
-      repos.map(async repo =>
-        setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN)
-      )
-    );
+    for (const repo of repos) {
+      await setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN);
+    }
   } catch (error) {
     /* istanbul ignore next */
     core.error(error);
