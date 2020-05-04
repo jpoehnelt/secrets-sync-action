@@ -7425,6 +7425,7 @@ const rest_1 = __webpack_require__(889);
 const utils_1 = __webpack_require__(611);
 const config_1 = __webpack_require__(478);
 const plugin_retry_1 = __webpack_require__(755);
+exports.publicKeyCache = new Map();
 const RetryOctokit = rest_1.Octokit.plugin(plugin_retry_1.retry);
 function DefaultOctokit(_a) {
     var octokitOptions = __rest(_a, []);
@@ -7493,29 +7494,47 @@ function filterReposByPatterns(repos, patterns) {
     return repos.filter(repo => regexPatterns.filter(r => r.test(repo.full_name)).length);
 }
 exports.filterReposByPatterns = filterReposByPatterns;
+function getPublicKey(octokit, repo) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let publicKey = exports.publicKeyCache.get(repo);
+        if (!publicKey) {
+            const [owner, name] = repo.full_name.split("/");
+            publicKey = (yield octokit.actions.getPublicKey({
+                owner,
+                repo: name
+            })).data;
+            exports.publicKeyCache.set(repo, publicKey);
+        }
+        return publicKey;
+    });
+}
+exports.getPublicKey = getPublicKey;
 function setSecretsForRepo(octokit, secrets, repo, dry_run) {
     return __awaiter(this, void 0, void 0, function* () {
-        const [owner, name] = repo.full_name.split("/");
-        const publicKey = (yield octokit.actions.getPublicKey({
-            owner,
-            repo: name
-        })).data;
         for (const k of Object.keys(secrets)) {
-            const encrypted_value = utils_1.encrypt(secrets[k], publicKey.key);
-            core.info(`Set \`${k} = ***\` on ${repo.full_name}`);
-            if (!dry_run) {
-                yield octokit.actions.createOrUpdateSecretForRepo({
-                    owner,
-                    repo: name,
-                    name: k,
-                    key_id: publicKey.key_id,
-                    encrypted_value
-                });
-            }
+            yield setSecretForRepo(octokit, k, secrets[k], repo, dry_run);
         }
     });
 }
 exports.setSecretsForRepo = setSecretsForRepo;
+function setSecretForRepo(octokit, name, secret, repo, dry_run) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const [repo_owner, repo_name] = repo.full_name.split("/");
+        const publicKey = yield getPublicKey(octokit, repo);
+        const encrypted_value = utils_1.encrypt(secret, publicKey.key);
+        core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
+        if (!dry_run) {
+            return octokit.actions.createOrUpdateSecretForRepo({
+                owner: repo_owner,
+                repo: repo_name,
+                name,
+                key_id: publicKey.key_id,
+                encrypted_value
+            });
+        }
+    });
+}
+exports.setSecretForRepo = setSecretForRepo;
 
 
 /***/ }),

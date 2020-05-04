@@ -20,6 +20,7 @@ import {
   DefaultOctokit,
   filterReposByPatterns,
   listAllMatchingRepos,
+  publicKeyCache,
   setSecretsForRepo
 } from "../src/github";
 
@@ -103,6 +104,7 @@ describe("setSecretsForRepo", () => {
 
   beforeEach(() => {
     nock.cleanAll();
+    publicKeyCache.clear();
     publicKeyMock = nock("https://api.github.com")
       .get(`/repos/${repo.full_name}/actions/secrets/public-key`)
       .reply(200, publicKey);
