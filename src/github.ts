@@ -159,17 +159,6 @@ export async function getPublicKey(
   return publicKey;
 }
 
-export async function setSecretsForRepo(
-  octokit: any,
-  secrets: { [key: string]: string },
-  repo: Repository,
-  dry_run: boolean
-): Promise<void> {
-  for (const k of Object.keys(secrets)) {
-    await setSecretForRepo(octokit, k, secrets[k], repo, dry_run);
-  }
-}
-
 export async function setSecretForRepo(
   octokit: any,
   name: string,

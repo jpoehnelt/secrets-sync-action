@@ -23,11 +23,13 @@ export interface Config {
   REPOSITORIES_LIST_REGEX: boolean;
   DRY_RUN: boolean;
   RETRIES: number;
+  CONCURRENCY: number;
 }
 
 export function getConfig(): Config {
   const config = {
     GITHUB_TOKEN: core.getInput("GITHUB_TOKEN", { required: true }),
+    CONCURRENCY: Number(core.getInput("CONCURRENCY")),
     RETRIES: Number(core.getInput("RETRIES")),
     SECRETS: core.getInput("SECRETS", { required: true }).split("\n"),
     REPOSITORIES: core.getInput("REPOSITORIES", { required: true }).split("\n"),

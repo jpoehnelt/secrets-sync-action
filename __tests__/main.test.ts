@@ -32,7 +32,7 @@ test("run should succeed with a repo and secret", async () => {
     .fn()
     .mockImplementation(async () => [fixture[0].response]);
 
-  (github.setSecretsForRepo as jest.Mock) = jest
+  (github.setSecretForRepo as jest.Mock) = jest
     .fn()
     .mockImplementation(async () => null);
 
@@ -46,12 +46,13 @@ test("run should succeed with a repo and secret", async () => {
     REPOSITORIES: [".*"],
     REPOSITORIES_LIST_REGEX: true,
     DRY_RUN: false,
-    RETRIES: 3
+    RETRIES: 3,
+    CONCURRENCY: 1
   });
   await run();
 
   expect(github.listAllMatchingRepos as jest.Mock).toBeCalledTimes(1);
-  expect((github.setSecretsForRepo as jest.Mock).mock.calls[0][2]).toEqual(
+  expect((github.setSecretForRepo as jest.Mock).mock.calls[0][3]).toEqual(
     fixture[0].response
   );
 
@@ -59,7 +60,7 @@ test("run should succeed with a repo and secret", async () => {
 });
 
 test("run should succeed with a repo and secret with repository_list_regex as false", async () => {
-  (github.setSecretsForRepo as jest.Mock) = jest
+  (github.setSecretForRepo as jest.Mock) = jest
     .fn()
     .mockImplementation(async () => null);
 
@@ -72,11 +73,12 @@ test("run should succeed with a repo and secret with repository_list_regex as fa
     SECRETS: ["BAZ"],
     REPOSITORIES: [fixture[0].response.full_name],
     REPOSITORIES_LIST_REGEX: false,
-    DRY_RUN: false
+    DRY_RUN: false,
+    CONCURRENCY: 1
   });
   await run();
 
-  expect((github.setSecretsForRepo as jest.Mock).mock.calls[0][2]).toEqual({
+  expect((github.setSecretForRepo as jest.Mock).mock.calls[0][3]).toEqual({
     full_name: fixture[0].response.full_name
   });
 

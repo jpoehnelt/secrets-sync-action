@@ -21,7 +21,7 @@ import {
   filterReposByPatterns,
   listAllMatchingRepos,
   publicKeyCache,
-  setSecretsForRepo
+  setSecretForRepo
 } from "../src/github";
 
 // @ts-ignore-next-line
@@ -88,7 +88,7 @@ test("filterReposByPatterns matches patterns", async () => {
   expect(filterReposByPatterns([fixture[0].response], ["nope"]).length).toBe(0);
 });
 
-describe("setSecretsForRepo", () => {
+describe("setSecretForRepo", () => {
   const repo = fixture[0].response;
   const publicKey = {
     key_id: "1234",
@@ -117,19 +117,19 @@ describe("setSecretsForRepo", () => {
       .reply(200);
   });
 
-  test("setSecretsForRepo should retrieve public key", async () => {
-    await setSecretsForRepo(octokit, secrets, repo, true);
+  test("setSecretForRepo should retrieve public key", async () => {
+    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, true);
     expect(publicKeyMock.isDone()).toBeTruthy();
   });
 
-  test("setSecretsForRepo should not set secret with dry run", async () => {
-    await setSecretsForRepo(octokit, secrets, repo, true);
+  test("setSecretForRepo should not set secret with dry run", async () => {
+    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, true);
     expect(publicKeyMock.isDone()).toBeTruthy();
     expect(setSecretMock.isDone()).toBeFalsy();
   });
 
-  test("setSecretsForRepo should should call set secret endpoint", async () => {
-    await setSecretsForRepo(octokit, secrets, repo, false);
+  test("setSecretForRepo should should call set secret endpoint", async () => {
+    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, false);
     expect(nock.isDone()).toBeTruthy();
   });
 });

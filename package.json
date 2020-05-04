@@ -29,6 +29,7 @@
     "@octokit/plugin-retry": "^3.0.1",
     "@octokit/plugin-throttling": "^3.2.0",
     "@octokit/rest": "^17.1.0",
+    "p-limit": "^2.3.0",
     "tweetsodium": "0.0.4"
   },
   "devDependencies": {
