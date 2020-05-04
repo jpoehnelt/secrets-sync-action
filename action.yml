@@ -39,6 +39,12 @@ inputs:
       The number of retries to attempt when making Github calls.
     default: "3"
     required: false
+  concurrency:
+    description: |
+      The number of allowed concurrent calls to the set secret endpoint. Lower this
+      number to avoid abuse limits.
+    default: "10"
+    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'

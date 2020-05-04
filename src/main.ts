@@ -20,11 +20,12 @@ import {
   DefaultOctokit,
   Repository,
   listAllMatchingRepos,
-  setSecretsForRepo
+  setSecretForRepo
 } from "./github";
 
 import { getConfig } from "./config";
 import { getSecrets } from "./secrets";
+import pLimit from "p-limit";
 
 export async function run(): Promise<void> {
   try {
@@ -81,9 +82,19 @@ export async function run(): Promise<void> {
       )
     );
 
+    const limit = pLimit(config.CONCURRENCY);
+    const calls: Promise<void>[] = [];
+
     for (const repo of repos) {
-      await setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN);
+      for (const k of Object.keys(secrets)) {
+        calls.push(
+          limit(() =>
+            setSecretForRepo(octokit, k, secrets[k], repo, config.DRY_RUN)
+          )
+        );
+      }
     }
+    await Promise.all(calls);
   } catch (error) {
     /* istanbul ignore next */
     core.error(error);

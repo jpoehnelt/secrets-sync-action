@@ -1856,6 +1856,23 @@ module.exports = windowsRelease;
 
 /***/ }),
 
+/***/ 72:
+/***/ (function(module) {
+
+"use strict";
+
+
+const pTry = (fn, ...arguments_) => new Promise(resolve => {
+	resolve(fn(...arguments_));
+});
+
+module.exports = pTry;
+// TODO: remove this in the next major version
+module.exports.default = pTry;
+
+
+/***/ }),
+
 /***/ 87:
 /***/ (function(module) {
 
@@ -1964,6 +1981,71 @@ module.exports = getStream;
 module.exports.buffer = (stream, options) => getStream(stream, Object.assign({}, options, {encoding: 'buffer'}));
 module.exports.array = (stream, options) => getStream(stream, Object.assign({}, options, {array: true}));
 module.exports.MaxBufferError = MaxBufferError;
+
+
+/***/ }),
+
+/***/ 158:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const pTry = __webpack_require__(72);
+
+const pLimit = concurrency => {
+	if (!((Number.isInteger(concurrency) || concurrency === Infinity) && concurrency > 0)) {
+		return Promise.reject(new TypeError('Expected `concurrency` to be a number from 1 and up'));
+	}
+
+	const queue = [];
+	let activeCount = 0;
+
+	const next = () => {
+		activeCount--;
+
+		if (queue.length > 0) {
+			queue.shift()();
+		}
+	};
+
+	const run = (fn, resolve, ...args) => {
+		activeCount++;
+
+		const result = pTry(fn, ...args);
+
+		resolve(result);
+
+		result.then(next, next);
+	};
+
+	const enqueue = (fn, resolve, ...args) => {
+		if (activeCount < concurrency) {
+			run(fn, resolve, ...args);
+		} else {
+			queue.push(run.bind(null, fn, resolve, ...args));
+		}
+	};
+
+	const generator = (fn, ...args) => new Promise(resolve => enqueue(fn, resolve, ...args));
+	Object.defineProperties(generator, {
+		activeCount: {
+			get: () => activeCount
+		},
+		pendingCount: {
+			get: () => queue.length
+		},
+		clearQueue: {
+			value: () => {
+				queue.length = 0;
+			}
+		}
+	});
+
+	return generator;
+};
+
+module.exports = pLimit;
+module.exports.default = pLimit;
 
 
 /***/ }),
@@ -2101,11 +2183,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
 const github_1 = __webpack_require__(824);
 const config_1 = __webpack_require__(478);
 const secrets_1 = __webpack_require__(545);
+const p_limit_1 = __importDefault(__webpack_require__(158));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -2148,9 +2234,14 @@ function run() {
                 FOUND_REPOS: repoNames,
                 FOUND_SECRETS: Object.keys(secrets)
             }, null, 2));
+            const limit = p_limit_1.default(config.CONCURRENCY);
+            const calls = [];
             for (const repo of repos) {
-                yield github_1.setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN);
+                for (const k of Object.keys(secrets)) {
+                    calls.push(limit(() => github_1.setSecretForRepo(octokit, k, secrets[k], repo, config.DRY_RUN)));
+                }
             }
+            yield Promise.all(calls);
         }
         catch (error) {
             /* istanbul ignore next */
@@ -5505,6 +5596,7 @@ const core = __importStar(__webpack_require__(470));
 function getConfig() {
     const config = {
         GITHUB_TOKEN: core.getInput("GITHUB_TOKEN", { required: true }),
+        CONCURRENCY: Number(core.getInput("CONCURRENCY")),
         RETRIES: Number(core.getInput("RETRIES")),
         SECRETS: core.getInput("SECRETS", { required: true }).split("\n"),
         REPOSITORIES: core.getInput("REPOSITORIES", { required: true }).split("\n"),
@@ -7509,14 +7601,6 @@ function getPublicKey(octokit, repo) {
     });
 }
 exports.getPublicKey = getPublicKey;
-function setSecretsForRepo(octokit, secrets, repo, dry_run) {
-    return __awaiter(this, void 0, void 0, function* () {
-        for (const k of Object.keys(secrets)) {
-            yield setSecretForRepo(octokit, k, secrets[k], repo, dry_run);
-        }
-    });
-}
-exports.setSecretsForRepo = setSecretsForRepo;
 function setSecretForRepo(octokit, name, secret, repo, dry_run) {
     return __awaiter(this, void 0, void 0, function* () {
         const [repo_owner, repo_name] = repo.full_name.split("/");
