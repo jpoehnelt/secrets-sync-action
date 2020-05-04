@@ -2148,7 +2148,9 @@ function run() {
                 FOUND_REPOS: repoNames,
                 FOUND_SECRETS: Object.keys(secrets)
             }, null, 2));
-            yield Promise.all(repos.map((repo) => __awaiter(this, void 0, void 0, function* () { return github_1.setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN); })));
+            for (const repo of repos) {
+                yield github_1.setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN);
+            }
         }
         catch (error) {
             /* istanbul ignore next */
