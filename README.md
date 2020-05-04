@@ -44,7 +44,7 @@ Run everything except for secret create and update functionality.
 ## Usage
 
 ```yaml
-uses: google/secrets-sync-action@v1.1.3
+uses: google/secrets-sync-action
   with:
     SECRETS: |
       ^FOO$
