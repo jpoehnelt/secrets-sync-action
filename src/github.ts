@@ -25,6 +25,13 @@ export interface Repository {
   full_name: string;
 }
 
+export interface PublicKey {
+  key: string;
+  key_id: string;
+}
+
+export const publicKeyCache = new Map<Repository, PublicKey>();
+
 const RetryOctokit = Octokit.plugin(retry);
 
 export function DefaultOctokit({ ...octokitOptions }): any {
@@ -131,34 +138,59 @@ export function filterReposByPatterns(
   );
 }
 
+export async function getPublicKey(
+  octokit: any,
+  repo: Repository
+): Promise<PublicKey> {
+  let publicKey = publicKeyCache.get(repo);
+
+  if (!publicKey) {
+    const [owner, name] = repo.full_name.split("/");
+    publicKey = (
+      await octokit.actions.getPublicKey({
+        owner,
+        repo: name
+      })
+    ).data as PublicKey;
+
+    publicKeyCache.set(repo, publicKey);
+  }
+
+  return publicKey;
+}
+
 export async function setSecretsForRepo(
   octokit: any,
   secrets: { [key: string]: string },
   repo: Repository,
   dry_run: boolean
 ): Promise<void> {
-  const [owner, name] = repo.full_name.split("/");
-
-  const publicKey = (
-    await octokit.actions.getPublicKey({
-      owner,
-      repo: name
-    })
-  ).data;
-
   for (const k of Object.keys(secrets)) {
-    const encrypted_value = encrypt(secrets[k], publicKey.key);
+    await setSecretForRepo(octokit, k, secrets[k], repo, dry_run);
+  }
+}
 
-    core.info(`Set \`${k} = ***\` on ${repo.full_name}`);
+export async function setSecretForRepo(
+  octokit: any,
+  name: string,
+  secret: string,
+  repo: Repository,
+  dry_run: boolean
+): Promise<void> {
+  const [repo_owner, repo_name] = repo.full_name.split("/");
 
-    if (!dry_run) {
-      await octokit.actions.createOrUpdateSecretForRepo({
-        owner,
-        repo: name,
-        name: k,
-        key_id: publicKey.key_id,
-        encrypted_value
-      });
-    }
+  const publicKey = await getPublicKey(octokit, repo);
+  const encrypted_value = encrypt(secret, publicKey.key);
+
+  core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
+
+  if (!dry_run) {
+    return octokit.actions.createOrUpdateSecretForRepo({
+      owner: repo_owner,
+      repo: repo_name,
+      name,
+      key_id: publicKey.key_id,
+      encrypted_value
+    });
   }
 }
