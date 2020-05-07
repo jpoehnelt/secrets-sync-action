@@ -51,11 +51,15 @@ afterAll(() => {
 });
 
 describe("listing repos from github", () => {
-  const pageSize = 2;
+  const pageSize = 3;
   beforeEach(() => {
     nock("https://api.github.com")
       .get(/\/user\/repos?.*page=1.*/)
-      .reply(200, [fixture[0].response, fixture[0].response]);
+      .reply(200, [
+        fixture[0].response,
+        fixture[0].response,
+        { archived: true, full_name: "foo/bar" }
+      ]);
 
     nock("https://api.github.com")
       .get(/\/user\/repos?.*page=2.*/)

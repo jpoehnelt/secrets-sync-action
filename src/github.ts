@@ -23,6 +23,7 @@ import { retry } from "@octokit/plugin-retry";
 
 export interface Repository {
   full_name: string;
+  archived?: boolean;
 }
 
 export interface PublicKey {
@@ -124,7 +125,7 @@ export async function listAllReposForAuthenticatedUser({
       break;
     }
   }
-  return repos;
+  return repos.filter(r => !r.archived);
 }
 
 export function filterReposByPatterns(
