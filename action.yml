@@ -14,7 +14,7 @@ inputs:
       New line deliminated regex expressions to select repositories. Repositires
       are limited to those in which the token user is an owner or collaborator.
       Set `REPOSITORIES_LIST_REGEX` to `False` to use a hardcoded list of
-      repositories.
+      repositories. Archived repositories will be ignored.
     required: true
   repositories_list_regex:
     default: "true"
