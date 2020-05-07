@@ -7577,7 +7577,7 @@ function listAllReposForAuthenticatedUser({ octokit, affiliation, pageSize }) {
                 break;
             }
         }
-        return repos;
+        return repos.filter(r => !r.archived);
     });
 }
 exports.listAllReposForAuthenticatedUser = listAllReposForAuthenticatedUser;
