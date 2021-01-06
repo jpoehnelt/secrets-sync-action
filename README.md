@@ -1,3 +1,5 @@
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/google/secrets-sync-action)
+
 # Secrets Sync Action
 
 ![Build](https://github.com/google/secrets-sync-action/workflows/Build/badge.svg)
