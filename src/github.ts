@@ -18,55 +18,81 @@ import * as core from "@actions/core";
 
 import { Octokit } from "@octokit/rest";
 import { encrypt } from "./utils";
+import { getConfig } from "./config";
 import { retry } from "@octokit/plugin-retry";
+
+export interface Repository {
+  full_name: string;
+  archived?: boolean;
+}
+
+export interface PublicKey {
+  key: string;
+  key_id: string;
+}
+
+export const publicKeyCache = new Map<Repository, PublicKey>();
 
 const RetryOctokit = Octokit.plugin(retry);
 
-/* istanbul ignore next */
-function onRateLimit(retryAfter: any, options: any): boolean {
-  core.warning(
-    `Request quota exhausted for request ${options.method} ${options.url}`
-  );
+export function DefaultOctokit({ ...octokitOptions }): any {
+  const retries = getConfig().RETRIES;
 
-  if (options.request.retryCount === 0) {
-    core.warning(`Retrying after ${retryAfter} seconds!`);
-    return true;
+  /* istanbul ignore next */
+  function onRateLimit(retryAfter: any, options: any): boolean {
+    core.warning(
+      `Request quota exhausted for request ${options.method} ${options.url}`
+    );
+
+    if (options.request.retryCount < retries) {
+      core.warning(
+        `Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`
+      );
+      return true;
+    }
+    core.warning(`Did not retry request ${options.method} ${options.url}`);
+    return false;
   }
-  return false;
-}
 
-/* istanbul ignore next */
-function onAbuseLimit(_: any, options: any): void {
-  core.warning(`Abuse detected for request ${options.method} ${options.url}`);
-}
+  /* istanbul ignore next */
+  function onAbuseLimit(retryAfter: any, options: any): boolean {
+    core.warning(`Abuse detected for request ${options.method} ${options.url}`);
 
-const defaultOptions = {
-  throttle: {
-    onRateLimit,
-    onAbuseLimit
+    if (options.request.retryCount < retries) {
+      core.warning(
+        `Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`
+      );
+      return true;
+    }
+    core.warning(`Did not retry request ${options.method} ${options.url}`);
+    return false;
   }
-};
 
-// eslint-disable-next-line @typescript-eslint/promise-function-async
-export function DefaultOctokit({ ...options }): any {
-  return new RetryOctokit({ ...defaultOptions, ...options });
+  const defaultOptions = {
+    throttle: {
+      onRateLimit,
+      onAbuseLimit
+    }
+  };
+
+  return new RetryOctokit({ ...defaultOptions, ...octokitOptions });
 }
 
 export async function listAllMatchingRepos({
   patterns,
   octokit,
   affiliation = "owner,collaborator,organization_member",
-  per_page = 30
+  pageSize = 30
 }: {
   patterns: string[];
   octokit: any;
   affiliation?: string;
-  per_page?: number;
-}): Promise<any[]> {
+  pageSize?: number;
+}): Promise<Repository[]> {
   const repos = await listAllReposForAuthenticatedUser({
     octokit,
     affiliation,
-    per_page
+    pageSize
   });
 
   core.info(
@@ -79,30 +105,33 @@ export async function listAllMatchingRepos({
 export async function listAllReposForAuthenticatedUser({
   octokit,
   affiliation,
-  per_page
+  pageSize
 }: {
   octokit: any;
   affiliation: string;
-  per_page: number;
-}): Promise<any[]> {
-  const repos: any[] = [];
+  pageSize: number;
+}): Promise<Repository[]> {
+  const repos: Repository[] = [];
 
-  for (let i = 1; i < 10; i++) {
+  for (let page = 1; ; page++) {
     const response = await octokit.repos.listForAuthenticatedUser({
       affiliation,
-      page: i,
-      pageSize: per_page
+      page,
+      pageSize
     });
     repos.push(...response.data);
 
-    if (response.data.length < per_page) {
+    if (response.data.length < pageSize) {
       break;
     }
   }
-  return repos;
+  return repos.filter(r => !r.archived);
 }
 
-export function filterReposByPatterns(repos: any[], patterns: string[]): any[] {
+export function filterReposByPatterns(
+  repos: Repository[],
+  patterns: string[]
+): Repository[] {
   const regexPatterns = patterns.map(s => new RegExp(s));
 
   return repos.filter(
@@ -110,34 +139,48 @@ export function filterReposByPatterns(repos: any[], patterns: string[]): any[] {
   );
 }
 
-export async function setSecretsForRepo(
+export async function getPublicKey(
   octokit: any,
-  secrets: { [key: string]: string },
-  repo: any,
+  repo: Repository
+): Promise<PublicKey> {
+  let publicKey = publicKeyCache.get(repo);
+
+  if (!publicKey) {
+    const [owner, name] = repo.full_name.split("/");
+    publicKey = (
+      await octokit.actions.getPublicKey({
+        owner,
+        repo: name
+      })
+    ).data as PublicKey;
+
+    publicKeyCache.set(repo, publicKey);
+  }
+
+  return publicKey;
+}
+
+export async function setSecretForRepo(
+  octokit: any,
+  name: string,
+  secret: string,
+  repo: Repository,
   dry_run: boolean
 ): Promise<void> {
-  const [owner, name] = repo.full_name.split("/");
+  const [repo_owner, repo_name] = repo.full_name.split("/");
 
-  const publicKey = (
-    await octokit.actions.getPublicKey({
-      owner,
-      repo: name
-    })
-  ).data;
+  const publicKey = await getPublicKey(octokit, repo);
+  const encrypted_value = encrypt(secret, publicKey.key);
 
-  for (const k of Object.keys(secrets)) {
-    const encrypted_value = encrypt(secrets[k], publicKey.key);
+  core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
 
-    core.info(`Set \`${k} = ***\` on ${repo.full_name}`);
-
-    if (!dry_run) {
-      await octokit.actions.createOrUpdateSecretForRepo({
-        owner,
-        repo: name,
-        name: k,
-        key_id: publicKey.key_id,
-        encrypted_value
-      });
-    }
+  if (!dry_run) {
+    return octokit.actions.createOrUpdateSecretForRepo({
+      owner: repo_owner,
+      repo: repo_name,
+      name,
+      key_id: publicKey.key_id,
+      encrypted_value
+    });
   }
 }

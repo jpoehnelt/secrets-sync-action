@@ -13,7 +13,7 @@
   },
   "license": "Apache 2.0",
   "author": "Justin Poehnelt",
-  "main": "lib/main.js",
+  "main": "lib/index.js",
   "scripts": {
     "all": "npm run build && npm run format-check && npm run lint && npm test && npm run pack",
     "build": "tsc",
@@ -25,19 +25,25 @@
     "test": "jest"
   },
   "dependencies": {
-    "@actions/core": "^1.2.0",
+    "@actions/core": "^1.2.6",
     "@octokit/plugin-retry": "^3.0.1",
     "@octokit/plugin-throttling": "^3.2.0",
     "@octokit/rest": "^17.1.0",
+    "p-limit": "^2.3.0",
     "tweetsodium": "0.0.4"
   },
   "devDependencies": {
+  <<<<<<< snyk-upgrade-dfbe4f7daf51c57808a5fc7ddb07918d
     "@octokit/fixtures": "^21.0.2",
+    "@octokit/types": "^2.16.2",
+  =======
+    "@octokit/fixtures": "^21.3.9",
     "@octokit/types": "^2.5.0",
+  >>>>>>> master
     "@types/jest": "^24.0.23",
-    "@types/node": "^12.12.30",
+    "@types/node": "^12.20.7",
     "@types/tmp": "^0.1.0",
-    "@typescript-eslint/parser": "^2.24.0",
+    "@typescript-eslint/parser": "^2.34.0",
     "@zeit/ncc": "^0.20.5",
     "eslint": "^5.16.0",
     "eslint-plugin-github": "^2.0.0",
@@ -49,6 +55,6 @@
     "nock": "^12.0.3",
     "prettier": "^1.19.1",
     "ts-jest": "^24.2.0",
-    "typescript": "^3.6.4"
+    "typescript": "^3.9.9"
   }
 }
