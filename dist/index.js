@@ -34,7 +34,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(198);
+/******/ 		return __webpack_require__(526);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -1856,10 +1856,89 @@ module.exports = windowsRelease;
 
 /***/ }),
 
+/***/ 72:
+/***/ (function(module) {
+
+"use strict";
+
+
+const pTry = (fn, ...arguments_) => new Promise(resolve => {
+	resolve(fn(...arguments_));
+});
+
+module.exports = pTry;
+// TODO: remove this in the next major version
+module.exports.default = pTry;
+
+
+/***/ }),
+
+/***/ 82:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Sanitizes an input into a string so it can be passed into issueCommand safely
+ * @param input input to sanitize into a string
+ */
+function toCommandValue(input) {
+    if (input === null || input === undefined) {
+        return '';
+    }
+    else if (typeof input === 'string' || input instanceof String) {
+        return input;
+    }
+    return JSON.stringify(input);
+}
+exports.toCommandValue = toCommandValue;
+//# sourceMappingURL=utils.js.map
+
+/***/ }),
+
 /***/ 87:
 /***/ (function(module) {
 
 module.exports = require("os");
+
+/***/ }),
+
+/***/ 102:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+// For internal use, subject to change.
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const fs = __importStar(__webpack_require__(747));
+const os = __importStar(__webpack_require__(87));
+const utils_1 = __webpack_require__(82);
+function issueCommand(command, message) {
+    const filePath = process.env[`GITHUB_${command}`];
+    if (!filePath) {
+        throw new Error(`Unable to find environment variable for file command ${command}`);
+    }
+    if (!fs.existsSync(filePath)) {
+        throw new Error(`Missing file at path: ${filePath}`);
+    }
+    fs.appendFileSync(filePath, `${utils_1.toCommandValue(message)}${os.EOL}`, {
+        encoding: 'utf8'
+    });
+}
+exports.issueCommand = issueCommand;
+//# sourceMappingURL=file-command.js.map
 
 /***/ }),
 
@@ -1964,6 +2043,71 @@ module.exports = getStream;
 module.exports.buffer = (stream, options) => getStream(stream, Object.assign({}, options, {encoding: 'buffer'}));
 module.exports.array = (stream, options) => getStream(stream, Object.assign({}, options, {array: true}));
 module.exports.MaxBufferError = MaxBufferError;
+
+
+/***/ }),
+
+/***/ 158:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const pTry = __webpack_require__(72);
+
+const pLimit = concurrency => {
+	if (!((Number.isInteger(concurrency) || concurrency === Infinity) && concurrency > 0)) {
+		return Promise.reject(new TypeError('Expected `concurrency` to be a number from 1 and up'));
+	}
+
+	const queue = [];
+	let activeCount = 0;
+
+	const next = () => {
+		activeCount--;
+
+		if (queue.length > 0) {
+			queue.shift()();
+		}
+	};
+
+	const run = (fn, resolve, ...args) => {
+		activeCount++;
+
+		const result = pTry(fn, ...args);
+
+		resolve(result);
+
+		result.then(next, next);
+	};
+
+	const enqueue = (fn, resolve, ...args) => {
+		if (activeCount < concurrency) {
+			run(fn, resolve, ...args);
+		} else {
+			queue.push(run.bind(null, fn, resolve, ...args));
+		}
+	};
+
+	const generator = (fn, ...args) => new Promise(resolve => enqueue(fn, resolve, ...args));
+	Object.defineProperties(generator, {
+		activeCount: {
+			get: () => activeCount
+		},
+		pendingCount: {
+			get: () => queue.length
+		},
+		clearQueue: {
+			value: () => {
+				queue.length = 0;
+			}
+		}
+	});
+
+	return generator;
+};
+
+module.exports = pLimit;
+module.exports.default = pLimit;
 
 
 /***/ }),
@@ -2101,11 +2245,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
 const github_1 = __webpack_require__(824);
 const config_1 = __webpack_require__(478);
 const secrets_1 = __webpack_require__(545);
+const p_limit_1 = __importDefault(__webpack_require__(158));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -2119,39 +2267,53 @@ function run() {
             const octokit = github_1.DefaultOctokit({
                 auth: config.GITHUB_TOKEN
             });
-            const repos = yield github_1.listAllMatchingRepos({
-                patterns: config.REPOSITORIES,
-                octokit
-            });
+            let repos;
+            if (config.REPOSITORIES_LIST_REGEX) {
+                repos = yield github_1.listAllMatchingRepos({
+                    patterns: config.REPOSITORIES,
+                    octokit
+                });
+            }
+            else {
+                repos = config.REPOSITORIES.map(s => {
+                    return {
+                        full_name: s
+                    };
+                });
+            }
             /* istanbul ignore next */
             if (repos.length === 0) {
                 const repoPatternString = config.REPOSITORIES.join(", ");
                 core.setFailed(`Repos: No matches with "${repoPatternString}". Check your token and regex.`);
                 return;
             }
-            // eslint-disable-next-line @typescript-eslint/promise-function-async
             const repoNames = repos.map(r => r.full_name);
             core.info(JSON.stringify({
                 REPOSITORIES: config.REPOSITORIES,
+                REPOSITORIES_LIST_REGEX: config.REPOSITORIES_LIST_REGEX,
                 SECRETS: config.SECRETS,
                 DRY_RUN: config.DRY_RUN,
                 FOUND_REPOS: repoNames,
                 FOUND_SECRETS: Object.keys(secrets)
             }, null, 2));
-            yield Promise.all(repos.map((repo) => __awaiter(this, void 0, void 0, function* () { return github_1.setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN); })));
+            const limit = p_limit_1.default(config.CONCURRENCY);
+            const calls = [];
+            for (const repo of repos) {
+                for (const k of Object.keys(secrets)) {
+                    calls.push(limit(() => github_1.setSecretForRepo(octokit, k, secrets[k], repo, config.DRY_RUN)));
+                }
+            }
+            yield Promise.all(calls);
         }
         catch (error) {
             /* istanbul ignore next */
-            () => {
-                // https://github.com/gotwarlost/istanbul/issues/361
-                core.error(error);
-                core.setFailed(error.message);
-            };
+            core.error(error);
+            /* istanbul ignore next */
+            core.setFailed(error.message);
         }
     });
 }
 exports.run = run;
-run();
 
 
 /***/ }),
@@ -4780,17 +4942,25 @@ function errname(uv, code) {
 
 "use strict";
 
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const os = __webpack_require__(87);
+const os = __importStar(__webpack_require__(87));
+const utils_1 = __webpack_require__(82);
 /**
  * Commands
  *
  * Command Format:
- *   ##[name key=value;key=value]message
+ *   ::name key=value,key=value::message
  *
  * Examples:
- *   ##[warning]This is the user warning message
- *   ##[set-secret name=mypassword]definitelyNotAPassword!
+ *   ::warning::This is the message
+ *   ::set-env name=MY_VAR::some value
  */
 function issueCommand(command, properties, message) {
     const cmd = new Command(command, properties, message);
@@ -4815,34 +4985,39 @@ class Command {
         let cmdStr = CMD_STRING + this.command;
         if (this.properties && Object.keys(this.properties).length > 0) {
             cmdStr += ' ';
+            let first = true;
             for (const key in this.properties) {
                 if (this.properties.hasOwnProperty(key)) {
                     const val = this.properties[key];
                     if (val) {
-                        // safely append the val - avoid blowing up when attempting to
-                        // call .replace() if message is not a string for some reason
-                        cmdStr += `${key}=${escape(`${val || ''}`)},`;
+                        if (first) {
+                            first = false;
+                        }
+                        else {
+                            cmdStr += ',';
+                        }
+                        cmdStr += `${key}=${escapeProperty(val)}`;
                     }
                 }
             }
         }
-        cmdStr += CMD_STRING;
-        // safely append the message - avoid blowing up when attempting to
-        // call .replace() if message is not a string for some reason
-        const message = `${this.message || ''}`;
-        cmdStr += escapeData(message);
+        cmdStr += `${CMD_STRING}${escapeData(this.message)}`;
         return cmdStr;
     }
 }
 function escapeData(s) {
-    return s.replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+    return utils_1.toCommandValue(s)
+        .replace(/%/g, '%25')
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A');
 }
-function escape(s) {
-    return s
+function escapeProperty(s) {
+    return utils_1.toCommandValue(s)
+        .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A')
-        .replace(/]/g, '%5D')
-        .replace(/;/g, '%3B');
+        .replace(/:/g, '%3A')
+        .replace(/,/g, '%2C');
 }
 //# sourceMappingURL=command.js.map
 
@@ -5188,10 +5363,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const command_1 = __webpack_require__(431);
-const os = __webpack_require__(87);
-const path = __webpack_require__(622);
+const file_command_1 = __webpack_require__(102);
+const utils_1 = __webpack_require__(82);
+const os = __importStar(__webpack_require__(87));
+const path = __importStar(__webpack_require__(622));
 /**
  * The code to exit an action
  */
@@ -5212,11 +5396,21 @@ var ExitCode;
 /**
  * Sets env variable for this action and future actions in the job
  * @param name the name of the variable to set
- * @param val the value of the variable
+ * @param val the value of the variable. Non-string values will be converted to a string via JSON.stringify
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function exportVariable(name, val) {
-    process.env[name] = val;
-    command_1.issueCommand('set-env', { name }, val);
+    const convertedVal = utils_1.toCommandValue(val);
+    process.env[name] = convertedVal;
+    const filePath = process.env['GITHUB_ENV'] || '';
+    if (filePath) {
+        const delimiter = '_GitHubActionsFileCommandDelimeter_';
+        const commandValue = `${name}<<${delimiter}${os.EOL}${convertedVal}${os.EOL}${delimiter}`;
+        file_command_1.issueCommand('ENV', commandValue);
+    }
+    else {
+        command_1.issueCommand('set-env', { name }, convertedVal);
+    }
 }
 exports.exportVariable = exportVariable;
 /**
@@ -5232,7 +5426,13 @@ exports.setSecret = setSecret;
  * @param inputPath
  */
 function addPath(inputPath) {
-    command_1.issueCommand('add-path', {}, inputPath);
+    const filePath = process.env['GITHUB_PATH'] || '';
+    if (filePath) {
+        file_command_1.issueCommand('PATH', inputPath);
+    }
+    else {
+        command_1.issueCommand('add-path', {}, inputPath);
+    }
     process.env['PATH'] = `${inputPath}${path.delimiter}${process.env['PATH']}`;
 }
 exports.addPath = addPath;
@@ -5255,12 +5455,22 @@ exports.getInput = getInput;
  * Sets the value of an output.
  *
  * @param     name     name of the output to set
- * @param     value    value to store
+ * @param     value    value to store. Non-string values will be converted to a string via JSON.stringify
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setOutput(name, value) {
     command_1.issueCommand('set-output', { name }, value);
 }
 exports.setOutput = setOutput;
+/**
+ * Enables or disables the echoing of commands into stdout for the rest of the step.
+ * Echoing is disabled by default if ACTIONS_STEP_DEBUG is not set.
+ *
+ */
+function setCommandEcho(enabled) {
+    command_1.issue('echo', enabled ? 'on' : 'off');
+}
+exports.setCommandEcho = setCommandEcho;
 //-----------------------------------------------------------------------
 // Results
 //-----------------------------------------------------------------------
@@ -5278,6 +5488,13 @@ exports.setFailed = setFailed;
 // Logging Commands
 //-----------------------------------------------------------------------
 /**
+ * Gets whether Actions Step Debug is on or not
+ */
+function isDebug() {
+    return process.env['RUNNER_DEBUG'] === '1';
+}
+exports.isDebug = isDebug;
+/**
  * Writes debug message to user log
  * @param message debug message
  */
@@ -5287,18 +5504,18 @@ function debug(message) {
 exports.debug = debug;
 /**
  * Adds an error issue
- * @param message error issue message
+ * @param message error issue message. Errors will be converted to string via toString()
  */
 function error(message) {
-    command_1.issue('error', message);
+    command_1.issue('error', message instanceof Error ? message.toString() : message);
 }
 exports.error = error;
 /**
  * Adds an warning issue
- * @param message warning issue message
+ * @param message warning issue message. Errors will be converted to string via toString()
  */
 function warning(message) {
-    command_1.issue('warning', message);
+    command_1.issue('warning', message instanceof Error ? message.toString() : message);
 }
 exports.warning = warning;
 /**
@@ -5356,8 +5573,9 @@ exports.group = group;
  * Saves state for current action, the state can only be retrieved by this action's post job execution.
  *
  * @param     name     name of the state to store
- * @param     value    value to store
+ * @param     value    value to store. Non-string values will be converted to a string via JSON.stringify
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function saveState(name, value) {
     command_1.issueCommand('save-state', { name }, value);
 }
@@ -5496,8 +5714,13 @@ const core = __importStar(__webpack_require__(470));
 function getConfig() {
     const config = {
         GITHUB_TOKEN: core.getInput("GITHUB_TOKEN", { required: true }),
+        CONCURRENCY: Number(core.getInput("CONCURRENCY")),
+        RETRIES: Number(core.getInput("RETRIES")),
         SECRETS: core.getInput("SECRETS", { required: true }).split("\n"),
         REPOSITORIES: core.getInput("REPOSITORIES", { required: true }).split("\n"),
+        REPOSITORIES_LIST_REGEX: ["1", "true"].includes(core
+            .getInput("REPOSITORIES_LIST_REGEX", { required: false })
+            .toLowerCase()),
         DRY_RUN: ["1", "true"].includes(core.getInput("DRY_RUN", { required: false }).toLowerCase())
     };
     if (config.DRY_RUN) {
@@ -5958,6 +6181,19 @@ module.exports = Hook
 module.exports.Hook = Hook
 module.exports.Singular = Hook.Singular
 module.exports.Collection = Hook.Collection
+
+
+/***/ }),
+
+/***/ 526:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const main_1 = __webpack_require__(198);
+/* istanbul ignore next */
+main_1.run();
 
 
 /***/ }),
@@ -7397,60 +7633,69 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
 const rest_1 = __webpack_require__(889);
 const utils_1 = __webpack_require__(611);
+const config_1 = __webpack_require__(478);
 const plugin_retry_1 = __webpack_require__(755);
+exports.publicKeyCache = new Map();
 const RetryOctokit = rest_1.Octokit.plugin(plugin_retry_1.retry);
-/* istanbul ignore next */
-function onRateLimit(retryAfter, options) {
-    core.warning(`Request quota exhausted for request ${options.method} ${options.url}`);
-    if (options.request.retryCount === 0) {
-        core.warning(`Retrying after ${retryAfter} seconds!`);
-        return true;
-    }
-    return false;
-}
-/* istanbul ignore next */
-function onAbuseLimit(_, options) {
-    core.warning(`Abuse detected for request ${options.method} ${options.url}`);
-}
-const defaultOptions = {
-    throttle: {
-        onRateLimit,
-        onAbuseLimit
-    }
-};
-// eslint-disable-next-line @typescript-eslint/promise-function-async
 function DefaultOctokit(_a) {
-    var options = __rest(_a, []);
-    return new RetryOctokit(Object.assign(Object.assign({}, defaultOptions), options));
+    var octokitOptions = __rest(_a, []);
+    const retries = config_1.getConfig().RETRIES;
+    /* istanbul ignore next */
+    function onRateLimit(retryAfter, options) {
+        core.warning(`Request quota exhausted for request ${options.method} ${options.url}`);
+        if (options.request.retryCount < retries) {
+            core.warning(`Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`);
+            return true;
+        }
+        core.warning(`Did not retry request ${options.method} ${options.url}`);
+        return false;
+    }
+    /* istanbul ignore next */
+    function onAbuseLimit(retryAfter, options) {
+        core.warning(`Abuse detected for request ${options.method} ${options.url}`);
+        if (options.request.retryCount < retries) {
+            core.warning(`Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`);
+            return true;
+        }
+        core.warning(`Did not retry request ${options.method} ${options.url}`);
+        return false;
+    }
+    const defaultOptions = {
+        throttle: {
+            onRateLimit,
+            onAbuseLimit
+        }
+    };
+    return new RetryOctokit(Object.assign(Object.assign({}, defaultOptions), octokitOptions));
 }
 exports.DefaultOctokit = DefaultOctokit;
-function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", per_page = 30 }) {
+function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", pageSize = 30 }) {
     return __awaiter(this, void 0, void 0, function* () {
         const repos = yield listAllReposForAuthenticatedUser({
             octokit,
             affiliation,
-            per_page
+            pageSize
         });
         core.info(`Available repositories: ${JSON.stringify(repos.map(r => r.full_name))}`);
         return filterReposByPatterns(repos, patterns);
     });
 }
 exports.listAllMatchingRepos = listAllMatchingRepos;
-function listAllReposForAuthenticatedUser({ octokit, affiliation, per_page }) {
+function listAllReposForAuthenticatedUser({ octokit, affiliation, pageSize }) {
     return __awaiter(this, void 0, void 0, function* () {
         const repos = [];
-        for (let i = 1; i < 10; i++) {
+        for (let page = 1;; page++) {
             const response = yield octokit.repos.listForAuthenticatedUser({
                 affiliation,
-                page: i,
-                pageSize: per_page
+                page,
+                pageSize
             });
             repos.push(...response.data);
-            if (response.data.length < per_page) {
+            if (response.data.length < pageSize) {
                 break;
             }
         }
-        return repos;
+        return repos.filter(r => !r.archived);
     });
 }
 exports.listAllReposForAuthenticatedUser = listAllReposForAuthenticatedUser;
@@ -7459,29 +7704,39 @@ function filterReposByPatterns(repos, patterns) {
     return repos.filter(repo => regexPatterns.filter(r => r.test(repo.full_name)).length);
 }
 exports.filterReposByPatterns = filterReposByPatterns;
-function setSecretsForRepo(octokit, secrets, repo, dry_run) {
+function getPublicKey(octokit, repo) {
     return __awaiter(this, void 0, void 0, function* () {
-        const [owner, name] = repo.full_name.split("/");
-        const publicKey = (yield octokit.actions.getPublicKey({
-            owner,
-            repo: name
-        })).data;
-        for (const k of Object.keys(secrets)) {
-            const encrypted_value = utils_1.encrypt(secrets[k], publicKey.key);
-            core.info(`Set \`${k} = ***\` on ${repo.full_name}`);
-            if (!dry_run) {
-                yield octokit.actions.createOrUpdateSecretForRepo({
-                    owner,
-                    repo: name,
-                    name: k,
-                    key_id: publicKey.key_id,
-                    encrypted_value
-                });
-            }
+        let publicKey = exports.publicKeyCache.get(repo);
+        if (!publicKey) {
+            const [owner, name] = repo.full_name.split("/");
+            publicKey = (yield octokit.actions.getPublicKey({
+                owner,
+                repo: name
+            })).data;
+            exports.publicKeyCache.set(repo, publicKey);
+        }
+        return publicKey;
+    });
+}
+exports.getPublicKey = getPublicKey;
+function setSecretForRepo(octokit, name, secret, repo, dry_run) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const [repo_owner, repo_name] = repo.full_name.split("/");
+        const publicKey = yield getPublicKey(octokit, repo);
+        const encrypted_value = utils_1.encrypt(secret, publicKey.key);
+        core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
+        if (!dry_run) {
+            return octokit.actions.createOrUpdateSecretForRepo({
+                owner: repo_owner,
+                repo: repo_name,
+                name,
+                key_id: publicKey.key_id,
+                encrypted_value
+            });
         }
     });
 }
-exports.setSecretsForRepo = setSecretsForRepo;
+exports.setSecretForRepo = setSecretForRepo;
 
 
 /***/ }),

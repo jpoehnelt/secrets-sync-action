@@ -18,12 +18,14 @@ import * as core from "@actions/core";
 
 import {
   DefaultOctokit,
+  Repository,
   listAllMatchingRepos,
-  setSecretsForRepo
+  setSecretForRepo
 } from "./github";
 
 import { getConfig } from "./config";
 import { getSecrets } from "./secrets";
+import pLimit from "p-limit";
 
 export async function run(): Promise<void> {
   try {
@@ -40,10 +42,19 @@ export async function run(): Promise<void> {
       auth: config.GITHUB_TOKEN
     });
 
-    const repos = await listAllMatchingRepos({
-      patterns: config.REPOSITORIES,
-      octokit
-    });
+    let repos: Repository[];
+    if (config.REPOSITORIES_LIST_REGEX) {
+      repos = await listAllMatchingRepos({
+        patterns: config.REPOSITORIES,
+        octokit
+      });
+    } else {
+      repos = config.REPOSITORIES.map(s => {
+        return {
+          full_name: s
+        };
+      });
+    }
 
     /* istanbul ignore next */
     if (repos.length === 0) {
@@ -54,13 +65,13 @@ export async function run(): Promise<void> {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/promise-function-async
     const repoNames = repos.map(r => r.full_name);
 
     core.info(
       JSON.stringify(
         {
           REPOSITORIES: config.REPOSITORIES,
+          REPOSITORIES_LIST_REGEX: config.REPOSITORIES_LIST_REGEX,
           SECRETS: config.SECRETS,
           DRY_RUN: config.DRY_RUN,
           FOUND_REPOS: repoNames,
@@ -71,15 +82,23 @@ export async function run(): Promise<void> {
       )
     );
 
-    await Promise.all(
-      repos.map(async repo =>
-        setSecretsForRepo(octokit, secrets, repo, config.DRY_RUN)
-      )
-    );
+    const limit = pLimit(config.CONCURRENCY);
+    const calls: Promise<void>[] = [];
+
+    for (const repo of repos) {
+      for (const k of Object.keys(secrets)) {
+        calls.push(
+          limit(() =>
+            setSecretForRepo(octokit, k, secrets[k], repo, config.DRY_RUN)
+          )
+        );
+      }
+    }
+    await Promise.all(calls);
   } catch (error) {
+    /* istanbul ignore next */
     core.error(error);
+    /* istanbul ignore next */
     core.setFailed(error.message);
   }
 }
-
-run();

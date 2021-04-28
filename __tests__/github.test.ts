@@ -14,23 +14,36 @@
  * limitations under the License.
  */
 
+import * as config from "../src/config";
+
 import {
   DefaultOctokit,
   filterReposByPatterns,
   listAllMatchingRepos,
-  setSecretsForRepo
+  publicKeyCache,
+  setSecretForRepo
 } from "../src/github";
 
 // @ts-ignore-next-line
 import fixture from "@octokit/fixtures/scenarios/api.github.com/get-repository/normalized-fixture.json";
 import nock from "nock";
 
-const octokit = DefaultOctokit({
-  auth: ""
-});
+let octokit: any;
 
 beforeAll(() => {
   nock.disableNetConnect();
+  (config.getConfig as jest.Mock) = jest.fn().mockReturnValue({
+    GITHUB_TOKEN: "token",
+    SECRETS: ["BAZ"],
+    REPOSITORIES: [".*"],
+    REPOSITORIES_LIST_REGEX: true,
+    DRY_RUN: false,
+    RETRIES: 3
+  });
+
+  octokit = DefaultOctokit({
+    auth: ""
+  });
 });
 
 afterAll(() => {
@@ -38,11 +51,15 @@ afterAll(() => {
 });
 
 describe("listing repos from github", () => {
-  const per_page = 2;
+  const pageSize = 3;
   beforeEach(() => {
     nock("https://api.github.com")
       .get(/\/user\/repos?.*page=1.*/)
-      .reply(200, [fixture[0].response, fixture[0].response]);
+      .reply(200, [
+        fixture[0].response,
+        fixture[0].response,
+        { archived: true, full_name: "foo/bar" }
+      ]);
 
     nock("https://api.github.com")
       .get(/\/user\/repos?.*page=2.*/)
@@ -53,7 +70,7 @@ describe("listing repos from github", () => {
     const repos = await listAllMatchingRepos({
       patterns: [".*"],
       octokit,
-      per_page
+      pageSize
     });
 
     expect(repos.length).toEqual(3);
@@ -63,7 +80,7 @@ describe("listing repos from github", () => {
     const repos = await listAllMatchingRepos({
       patterns: ["octokit.*"],
       octokit,
-      per_page
+      pageSize
     });
 
     expect(repos.length).toEqual(3);
@@ -75,7 +92,7 @@ test("filterReposByPatterns matches patterns", async () => {
   expect(filterReposByPatterns([fixture[0].response], ["nope"]).length).toBe(0);
 });
 
-describe("setSecretsForRepo", () => {
+describe("setSecretForRepo", () => {
   const repo = fixture[0].response;
   const publicKey = {
     key_id: "1234",
@@ -91,6 +108,7 @@ describe("setSecretsForRepo", () => {
 
   beforeEach(() => {
     nock.cleanAll();
+    publicKeyCache.clear();
     publicKeyMock = nock("https://api.github.com")
       .get(`/repos/${repo.full_name}/actions/secrets/public-key`)
       .reply(200, publicKey);
@@ -103,19 +121,19 @@ describe("setSecretsForRepo", () => {
       .reply(200);
   });
 
-  test("setSecretsForRepo should retrieve public key", async () => {
-    await setSecretsForRepo(octokit, secrets, repo, true);
+  test("setSecretForRepo should retrieve public key", async () => {
+    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, true);
     expect(publicKeyMock.isDone()).toBeTruthy();
   });
 
-  test("setSecretsForRepo should not set secret with dry run", async () => {
-    await setSecretsForRepo(octokit, secrets, repo, true);
+  test("setSecretForRepo should not set secret with dry run", async () => {
+    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, true);
     expect(publicKeyMock.isDone()).toBeTruthy();
     expect(setSecretMock.isDone()).toBeFalsy();
   });
 
-  test("setSecretsForRepo should should call set secret endpoint", async () => {
-    await setSecretsForRepo(octokit, secrets, repo, false);
+  test("setSecretForRepo should should call set secret endpoint", async () => {
+    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, false);
     expect(nock.isDone()).toBeTruthy();
   });
 });

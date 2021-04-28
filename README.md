@@ -16,11 +16,26 @@ A Github Action that can sync secrets from one repository to many others. This a
 
 ### `repositories`
 
-**Required** New line deliminated regex expressions to select repositories. Repositires are limited to those in whcich the token user is an owner or collaborator.
+**Required** New line deliminated regex expressions to select repositories. Repositires are limited to those in whcich the token user is an owner or collaborator. Set `repositories_list_regex` to `False` to use a hardcoded list of repositories. Archived repositories will be ignored.
+
+### `repositories_list_regex`
+
+If this value is `true` (default), the action will find all
+repositories available to the token user and filter based upon the regex
+provided. If it is false, it is expected that `repositories` will be an a
+new line deliminated list in the form of org/name.
 
 ### `secrets`
 
 **Required** New line deliminated regex expressions to select values from `process.env`. Use the action env to pass secrets from the repository in which this action runs with the `env` attribute of the step.
+
+### `retries`
+
+The number of retries to attempt when making Github calls when triggering rate limits or abuse limits. Defaults to 3.
+
+### `concurrency`
+
+The number of allowed concurrent calls to the set secret endpoint. Lower this number to avoid abuse limits. Defaults to 10.
 
 ### `dry_run`
 
@@ -29,7 +44,7 @@ Run everything except for secret create and update functionality.
 ## Usage
 
 ```yaml
-uses: google/secrets-sync-action@v1.0.0
+uses: google/secrets-sync-action
   with:
     SECRETS: |
       ^FOO$
@@ -38,6 +53,7 @@ uses: google/secrets-sync-action@v1.0.0
       ${{github.repository}}
     DRY_RUN: true
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_SECRETS }}
+    CONCURRENCY: 10
   env:
     FOO: ${{github.run_id}}
     FOOBAR: BAZ
