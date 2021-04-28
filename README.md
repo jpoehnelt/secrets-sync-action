@@ -16,18 +16,15 @@ A Github Action that can sync secrets from one repository to many others. This a
 
 ### `repositories`
 
-**Required** New line deliminated regex expressions to select repositories. Repositires are limited to those in whcich the token user is an owner or collaborator. Set `repositories_list_regex` to `False` to use a hardcoded list of repositories. Archived repositories will be ignored.
+**Required** Newline delimited regex expressions to select repositories. Repositories are limited to those in which the token user is an owner or collaborator. Set `repositories_list_regex` to `False` to use a hardcoded list of repositories. Archived repositories will be ignored.
 
 ### `repositories_list_regex`
 
-If this value is `true` (default), the action will find all
-repositories available to the token user and filter based upon the regex
-provided. If it is false, it is expected that `repositories` will be an a
-new line deliminated list in the form of org/name.
+If this value is `true` (default), the action will find all repositories available to the token user and filter based upon the regex provided. If it is `false`, it is expected that `repositories` will be an a newline delimited list in the form of org/name.
 
 ### `secrets`
 
-**Required** New line deliminated regex expressions to select values from `process.env`. Use the action env to pass secrets from the repository in which this action runs with the `env` attribute of the step.
+**Required** Newline delimited regex expressions to select values from `process.env`. Use the action env to pass secrets from the repository in which this action runs with the `env` attribute of the step.
 
 ### `retries`
 
