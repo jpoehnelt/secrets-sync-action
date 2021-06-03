@@ -38,6 +38,10 @@ The number of allowed concurrent calls to the set secret endpoint. Lower this nu
 
 Run everything except for secret create and update functionality.
 
+### `delete`
+
+When set to `true`, the action will find and delete the selected secrets from repositories. Defaults to `false`.
+
 ## Usage
 
 ```yaml

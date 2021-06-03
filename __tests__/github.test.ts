@@ -21,7 +21,8 @@ import {
   filterReposByPatterns,
   listAllMatchingRepos,
   publicKeyCache,
-  setSecretForRepo
+  setSecretForRepo,
+  deleteSecretForRepo
 } from "../src/github";
 
 // @ts-ignore-next-line
@@ -134,6 +135,32 @@ describe("setSecretForRepo", () => {
 
   test("setSecretForRepo should should call set secret endpoint", async () => {
     await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, false);
+    expect(nock.isDone()).toBeTruthy();
+  });
+});
+
+describe("deleteSecretForRepo", () => {
+  const repo = fixture[0].response;
+
+  jest.setTimeout(30000);
+
+  const secrets = { FOO: "BAR" };
+  let deleteSecretMock: nock.Scope;
+
+  beforeEach(() => {
+    nock.cleanAll();
+    deleteSecretMock = nock("https://api.github.com")
+      .delete(`/repos/${repo.full_name}/actions/secrets/FOO`)
+      .reply(200);
+  });
+
+  test("deleteSecretForRepo should not delete secret with dry run", async () => {
+    await deleteSecretForRepo(octokit, "FOO", secrets.FOO, repo, true);
+    expect(deleteSecretMock.isDone()).toBeFalsy();
+  });
+
+  test("deleteSecretForRepo should call set secret endpoint", async () => {
+    await deleteSecretForRepo(octokit, "FOO", secrets.FOO, repo, false);
     expect(nock.isDone()).toBeTruthy();
   });
 });

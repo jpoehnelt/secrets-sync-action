@@ -20,7 +20,8 @@ import {
   DefaultOctokit,
   Repository,
   listAllMatchingRepos,
-  setSecretForRepo
+  setSecretForRepo,
+  deleteSecretForRepo
 } from "./github";
 
 import { getConfig } from "./config";
@@ -84,17 +85,22 @@ export async function run(): Promise<void> {
 
     const limit = pLimit(config.CONCURRENCY);
     const calls: Promise<void>[] = [];
+    try {
+      for (const repo of repos) {
+        for (const k of Object.keys(secrets)) {
+          const action = config.RUN_DELETE
+            ? deleteSecretForRepo
+            : setSecretForRepo;
 
-    for (const repo of repos) {
-      for (const k of Object.keys(secrets)) {
-        calls.push(
-          limit(() =>
-            setSecretForRepo(octokit, k, secrets[k], repo, config.DRY_RUN)
-          )
-        );
+          calls.push(
+            limit(() => action(octokit, k, secrets[k], repo, config.DRY_RUN))
+          );
+        }
       }
+      await Promise.all(calls);
+    } catch (HttpError) {
+      //If secret is not found in target repo, silently continue
     }
-    await Promise.all(calls);
   } catch (error) {
     /* istanbul ignore next */
     core.error(error);
