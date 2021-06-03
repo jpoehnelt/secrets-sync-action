@@ -18,7 +18,7 @@ import * as core from "@actions/core";
 
 import { getSecrets } from "../src/secrets";
 
-let setSecretMock: jest.Mock = jest.fn();
+const setSecretMock: jest.Mock = jest.fn();
 
 beforeAll(() => {
   // @ts-ignore-next-line

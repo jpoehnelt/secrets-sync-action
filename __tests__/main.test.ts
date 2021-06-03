@@ -84,3 +84,23 @@ test("run should succeed with a repo and secret with repository_list_regex as fa
 
   expect(process.exitCode).toBe(undefined);
 });
+
+test("run should succeed with delete enabled, a repo and secret with repository_list_regex as false", async () => {
+  (github.deleteSecretForRepo as jest.Mock) = jest
+    .fn()
+    .mockImplementation(async () => null);
+
+  (config.getConfig as jest.Mock) = jest.fn().mockReturnValue({
+    GITHUB_TOKEN: "token",
+    SECRETS: ["BAZ"],
+    REPOSITORIES: [fixture[0].response.full_name],
+    REPOSITORIES_LIST_REGEX: false,
+    DRY_RUN: false,
+    RUN_DELETE: true,
+    CONCURRENCY: 1
+  });
+  await run();
+
+  expect(github.deleteSecretForRepo as jest.Mock).toBeCalledTimes(1);
+  expect(process.exitCode).toBe(undefined);
+});
