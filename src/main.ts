@@ -85,7 +85,6 @@ export async function run(): Promise<void> {
 
     const limit = pLimit(config.CONCURRENCY);
     const calls: Promise<void>[] = [];
-    try {
       for (const repo of repos) {
         for (const k of Object.keys(secrets)) {
           const action = config.RUN_DELETE
@@ -98,9 +97,6 @@ export async function run(): Promise<void> {
         }
       }
       await Promise.all(calls);
-    } catch (HttpError) {
-      //If secret is not found in target repo, silently continue
-    }
   } catch (error) {
     /* istanbul ignore next */
     core.error(error);
