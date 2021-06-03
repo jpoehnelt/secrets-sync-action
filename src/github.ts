@@ -184,3 +184,23 @@ export async function setSecretForRepo(
     });
   }
 }
+
+export async function deleteSecretForRepo(
+  octokit: any,
+  name: string,
+  secret: string,
+  repo: Repository,
+  dry_run: boolean
+): Promise<void> {
+  core.info(`Remove ${name} from ${repo.full_name}`);
+
+  try {
+    if (!dry_run) {
+      const action = "DELETE";
+      const request = `/repos/${repo.full_name}/actions/secrets/${name}`;
+      return octokit.request(`${action} ${request}`);
+    }
+  } catch (HttpError) {
+    //If secret is not found in target repo, silently continue
+  }
+}

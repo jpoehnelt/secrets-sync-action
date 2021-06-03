@@ -32,6 +32,7 @@ describe("getConfig", () => {
   const DRY_RUN = false;
   const RETRIES = 3;
   const CONCURRENCY = 50;
+  const RUN_DELETE = false;
 
   const inputs = {
     INPUT_GITHUB_TOKEN: GITHUB_TOKEN,
@@ -40,7 +41,8 @@ describe("getConfig", () => {
     INPUT_REPOSITORIES_LIST_REGEX: String(REPOSITORIES_LIST_REGEX),
     INPUT_DRY_RUN: String(DRY_RUN),
     INPUT_RETRIES: String(RETRIES),
-    INPUT_CONCURRENCY: String(CONCURRENCY)
+    INPUT_CONCURRENCY: String(CONCURRENCY),
+    INPUT_RUN_DELETE: String(RUN_DELETE)
   };
 
   beforeEach(() => {
@@ -65,7 +67,8 @@ describe("getConfig", () => {
       REPOSITORIES_LIST_REGEX,
       DRY_RUN,
       RETRIES,
-      CONCURRENCY
+      CONCURRENCY,
+      RUN_DELETE
     });
   });
 
@@ -85,7 +88,7 @@ describe("getConfig", () => {
       ["", false]
     ];
 
-    for (let [value, expected] of cases) {
+    for (const [value, expected] of cases) {
       process.env["INPUT_DRY_RUN"] = value;
       const actual = getConfig().DRY_RUN;
       expect(`${value}=${actual}`).toEqual(`${value}=${expected}`);

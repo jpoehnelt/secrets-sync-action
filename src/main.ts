@@ -20,7 +20,8 @@ import {
   DefaultOctokit,
   Repository,
   listAllMatchingRepos,
-  setSecretForRepo
+  setSecretForRepo,
+  deleteSecretForRepo
 } from "./github";
 
 import { getConfig } from "./config";
@@ -84,13 +85,14 @@ export async function run(): Promise<void> {
 
     const limit = pLimit(config.CONCURRENCY);
     const calls: Promise<void>[] = [];
-
     for (const repo of repos) {
       for (const k of Object.keys(secrets)) {
+        const action = config.RUN_DELETE
+          ? deleteSecretForRepo
+          : setSecretForRepo;
+
         calls.push(
-          limit(() =>
-            setSecretForRepo(octokit, k, secrets[k], repo, config.DRY_RUN)
-          )
+          limit(() => action(octokit, k, secrets[k], repo, config.DRY_RUN))
         );
       }
     }

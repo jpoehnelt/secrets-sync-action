@@ -24,6 +24,7 @@ export interface Config {
   DRY_RUN: boolean;
   RETRIES: number;
   CONCURRENCY: number;
+  RUN_DELETE: boolean;
 }
 
 export function getConfig(): Config {
@@ -40,6 +41,9 @@ export function getConfig(): Config {
     ),
     DRY_RUN: ["1", "true"].includes(
       core.getInput("DRY_RUN", { required: false }).toLowerCase()
+    ),
+    RUN_DELETE: ["1", "true"].includes(
+      core.getInput("DELETE", { required: false }).toLowerCase()
     )
   };
 

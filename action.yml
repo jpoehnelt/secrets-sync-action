@@ -45,6 +45,11 @@ inputs:
       number to avoid abuse limits.
     default: "10"
     required: false
+  delete:
+    description: |
+      When set to `true`, the action will find and delete the selected secrets from repositories. Defaults to `false`.
+    default: false
+    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'
