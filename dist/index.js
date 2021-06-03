@@ -2300,7 +2300,10 @@ function run() {
             const calls = [];
             for (const repo of repos) {
                 for (const k of Object.keys(secrets)) {
-                    calls.push(limit(() => github_1.setSecretForRepo(octokit, k, secrets[k], repo, config.DRY_RUN)));
+                    const action = config.RUN_DELETE
+                        ? github_1.deleteSecretForRepo
+                        : github_1.setSecretForRepo;
+                    calls.push(limit(() => action(octokit, k, secrets[k], repo, config.DRY_RUN)));
                 }
             }
             yield Promise.all(calls);
@@ -5728,7 +5731,8 @@ function getConfig() {
         REPOSITORIES_LIST_REGEX: ["1", "true"].includes(core
             .getInput("REPOSITORIES_LIST_REGEX", { required: false })
             .toLowerCase()),
-        DRY_RUN: ["1", "true"].includes(core.getInput("DRY_RUN", { required: false }).toLowerCase())
+        DRY_RUN: ["1", "true"].includes(core.getInput("DRY_RUN", { required: false }).toLowerCase()),
+        RUN_DELETE: ["1", "true"].includes(core.getInput("DELETE", { required: false }).toLowerCase())
     };
     if (config.DRY_RUN) {
         core.info("[DRY_RUN='true'] No changes will be written to secrets");
@@ -7744,6 +7748,22 @@ function setSecretForRepo(octokit, name, secret, repo, dry_run) {
     });
 }
 exports.setSecretForRepo = setSecretForRepo;
+function deleteSecretForRepo(octokit, name, secret, repo, dry_run) {
+    return __awaiter(this, void 0, void 0, function* () {
+        core.info(`Remove ${name} from ${repo.full_name}`);
+        try {
+            if (!dry_run) {
+                const action = "DELETE";
+                const request = `/repos/${repo.full_name}/actions/secrets/${name}`;
+                return octokit.request(`${action} ${request}`);
+            }
+        }
+        catch (HttpError) {
+            //If secret is not found in target repo, silently continue
+        }
+    });
+}
+exports.deleteSecretForRepo = deleteSecretForRepo;
 
 
 /***/ }),
