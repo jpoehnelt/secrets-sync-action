@@ -40,7 +40,8 @@ export async function run(): Promise<void> {
     }
 
     const octokit = DefaultOctokit({
-      auth: config.GITHUB_TOKEN
+      auth: config.GITHUB_TOKEN,
+      baseUrl: process.env.GITHUB_API_URL || "https://api.github.com"
     });
 
     let repos: Repository[];
