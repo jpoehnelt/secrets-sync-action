@@ -24,6 +24,7 @@ import { retry } from "@octokit/plugin-retry";
 export interface Repository {
   full_name: string;
   archived?: boolean;
+  id: number;
 }
 
 export interface PublicKey {
@@ -71,18 +72,38 @@ export function DefaultOctokit({ ...octokitOptions }): any {
   const defaultOptions = {
     throttle: {
       onRateLimit,
-      onAbuseLimit
-    }
+      onAbuseLimit,
+    },
   };
 
   return new RetryOctokit({ ...defaultOptions, ...octokitOptions });
+}
+
+export async function getRepos({
+  patterns,
+  octokit,
+}: {
+  patterns: string[];
+  octokit: any;
+}): Promise<Repository[]> {
+  const repos: Repository[] = [];
+
+  for (const pattern of patterns) {
+    const [repo_owner, repo_name] = pattern.split("/");
+    const response = await octokit.repos.get({
+      owner: repo_owner,
+      repo: repo_name,
+    });
+    repos.push(response.data);
+  }
+  return repos.filter((r) => !r.archived);
 }
 
 export async function listAllMatchingRepos({
   patterns,
   octokit,
   affiliation = "owner,collaborator,organization_member",
-  pageSize = 30
+  pageSize = 30,
 }: {
   patterns: string[];
   octokit: any;
@@ -92,11 +113,11 @@ export async function listAllMatchingRepos({
   const repos = await listAllReposForAuthenticatedUser({
     octokit,
     affiliation,
-    pageSize
+    pageSize,
   });
 
   core.info(
-    `Available repositories: ${JSON.stringify(repos.map(r => r.full_name))}`
+    `Available repositories: ${JSON.stringify(repos.map((r) => r.full_name))}`
   );
 
   return filterReposByPatterns(repos, patterns);
@@ -105,7 +126,7 @@ export async function listAllMatchingRepos({
 export async function listAllReposForAuthenticatedUser({
   octokit,
   affiliation,
-  pageSize
+  pageSize,
 }: {
   octokit: any;
   affiliation: string;
@@ -117,7 +138,7 @@ export async function listAllReposForAuthenticatedUser({
     const response = await octokit.repos.listForAuthenticatedUser({
       affiliation,
       page,
-      pageSize
+      pageSize,
     });
     repos.push(...response.data);
 
@@ -125,35 +146,44 @@ export async function listAllReposForAuthenticatedUser({
       break;
     }
   }
-  return repos.filter(r => !r.archived);
+  return repos.filter((r) => !r.archived);
 }
 
 export function filterReposByPatterns(
   repos: Repository[],
   patterns: string[]
 ): Repository[] {
-  const regexPatterns = patterns.map(s => new RegExp(s));
+  const regexPatterns = patterns.map((s) => new RegExp(s));
 
   return repos.filter(
-    repo => regexPatterns.filter(r => r.test(repo.full_name)).length
+    (repo) => regexPatterns.filter((r) => r.test(repo.full_name)).length
   );
 }
 
 export async function getPublicKey(
   octokit: any,
-  repo: Repository
+  repo: Repository,
+  environment: string
 ): Promise<PublicKey> {
   let publicKey = publicKeyCache.get(repo);
 
   if (!publicKey) {
-    const [owner, name] = repo.full_name.split("/");
-    publicKey = (
-      await octokit.actions.getPublicKey({
-        owner,
-        repo: name
-      })
-    ).data as PublicKey;
-
+    if (environment) {
+      publicKey = (
+        await octokit.actions.getEnvironmentPublicKey({
+          repository_id: repo.id,
+          environment_name: environment,
+        })
+      ).data as PublicKey;
+    } else {
+      const [owner, name] = repo.full_name.split("/");
+      publicKey = (
+        await octokit.actions.getRepoPublicKey({
+          owner,
+          repo: name,
+        })
+      ).data as PublicKey;
+    }
     publicKeyCache.set(repo, publicKey);
   }
 
@@ -165,23 +195,34 @@ export async function setSecretForRepo(
   name: string,
   secret: string,
   repo: Repository,
+  environment: string,
   dry_run: boolean
 ): Promise<void> {
   const [repo_owner, repo_name] = repo.full_name.split("/");
 
-  const publicKey = await getPublicKey(octokit, repo);
+  const publicKey = await getPublicKey(octokit, repo, environment);
   const encrypted_value = encrypt(secret, publicKey.key);
 
   core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
 
   if (!dry_run) {
-    return octokit.actions.createOrUpdateSecretForRepo({
-      owner: repo_owner,
-      repo: repo_name,
-      name,
-      key_id: publicKey.key_id,
-      encrypted_value
-    });
+    if (environment) {
+      return octokit.actions.createOrUpdateEnvironmentSecret({
+        repository_id: repo.id,
+        environment_name: environment,
+        secret_name: name,
+        key_id: publicKey.key_id,
+        encrypted_value,
+      });
+    } else {
+      return octokit.actions.createOrUpdateRepoSecret({
+        owner: repo_owner,
+        repo: repo_name,
+        secret_name: name,
+        key_id: publicKey.key_id,
+        encrypted_value,
+      });
+    }
   }
 }
 
@@ -190,6 +231,7 @@ export async function deleteSecretForRepo(
   name: string,
   secret: string,
   repo: Repository,
+  environment: string,
   dry_run: boolean
 ): Promise<void> {
   core.info(`Remove ${name} from ${repo.full_name}`);
@@ -197,8 +239,13 @@ export async function deleteSecretForRepo(
   try {
     if (!dry_run) {
       const action = "DELETE";
-      const request = `/repos/${repo.full_name}/actions/secrets/${name}`;
-      return octokit.request(`${action} ${request}`);
+      if (environment) {
+        const request = `/repositories/${repo.id}/environments/${environment}/secrets/${name}`;
+        return octokit.request(`${action} ${request}`);
+      } else {
+        const request = `/repos/${repo.full_name}/actions/secrets/${name}`;
+        return octokit.request(`${action} ${request}`);
+      }
     }
   } catch (HttpError) {
     //If secret is not found in target repo, silently continue

@@ -18,8 +18,8 @@ import { getConfig } from "../src/config";
 
 function clearInputs() {
   Object.keys(process.env)
-    .filter(k => k.match(/INPUT_.*/))
-    .forEach(k => {
+    .filter((k) => k.match(/INPUT_.*/))
+    .forEach((k) => {
       process.env[k] = "";
     });
 }
@@ -33,6 +33,7 @@ describe("getConfig", () => {
   const RETRIES = 3;
   const CONCURRENCY = 50;
   const RUN_DELETE = false;
+  const ENVIRONMENT = "production";
 
   const inputs = {
     INPUT_GITHUB_TOKEN: GITHUB_TOKEN,
@@ -42,7 +43,8 @@ describe("getConfig", () => {
     INPUT_DRY_RUN: String(DRY_RUN),
     INPUT_RETRIES: String(RETRIES),
     INPUT_CONCURRENCY: String(CONCURRENCY),
-    INPUT_RUN_DELETE: String(RUN_DELETE)
+    INPUT_RUN_DELETE: String(RUN_DELETE),
+    INPUT_ENVIRONMENT: String(ENVIRONMENT),
   };
 
   beforeEach(() => {
@@ -68,7 +70,8 @@ describe("getConfig", () => {
       DRY_RUN,
       RETRIES,
       CONCURRENCY,
-      RUN_DELETE
+      RUN_DELETE,
+      ENVIRONMENT,
     });
   });
 
@@ -85,7 +88,7 @@ describe("getConfig", () => {
       ["False", false],
       ["FALSE", false],
       ["foo", false],
-      ["", false]
+      ["", false],
     ];
 
     for (const [value, expected] of cases) {

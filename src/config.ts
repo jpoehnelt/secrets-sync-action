@@ -25,6 +25,7 @@ export interface Config {
   RETRIES: number;
   CONCURRENCY: number;
   RUN_DELETE: boolean;
+  ENVIRONMENT: string;
 }
 
 export function getConfig(): Config {
@@ -44,7 +45,8 @@ export function getConfig(): Config {
     ),
     RUN_DELETE: ["1", "true"].includes(
       core.getInput("DELETE", { required: false }).toLowerCase()
-    )
+    ),
+    ENVIRONMENT: core.getInput("ENVIRONMENT", { required: false }),
   };
 
   if (config.DRY_RUN) {

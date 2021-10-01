@@ -21,7 +21,8 @@ import {
   Repository,
   listAllMatchingRepos,
   setSecretForRepo,
-  deleteSecretForRepo
+  deleteSecretForRepo,
+  getRepos,
 } from "./github";
 
 import { getConfig } from "./config";
@@ -40,20 +41,19 @@ export async function run(): Promise<void> {
     }
 
     const octokit = DefaultOctokit({
-      auth: config.GITHUB_TOKEN
+      auth: config.GITHUB_TOKEN,
     });
 
     let repos: Repository[];
     if (config.REPOSITORIES_LIST_REGEX) {
       repos = await listAllMatchingRepos({
         patterns: config.REPOSITORIES,
-        octokit
+        octokit,
       });
     } else {
-      repos = config.REPOSITORIES.map(s => {
-        return {
-          full_name: s
-        };
+      repos = await getRepos({
+        patterns: config.REPOSITORIES,
+        octokit,
       });
     }
 
@@ -66,7 +66,7 @@ export async function run(): Promise<void> {
       return;
     }
 
-    const repoNames = repos.map(r => r.full_name);
+    const repoNames = repos.map((r) => r.full_name);
 
     core.info(
       JSON.stringify(
@@ -76,7 +76,8 @@ export async function run(): Promise<void> {
           SECRETS: config.SECRETS,
           DRY_RUN: config.DRY_RUN,
           FOUND_REPOS: repoNames,
-          FOUND_SECRETS: Object.keys(secrets)
+          FOUND_SECRETS: Object.keys(secrets),
+          ENVIRONMENT: config.ENVIRONMENT,
         },
         null,
         2
@@ -92,12 +93,21 @@ export async function run(): Promise<void> {
           : setSecretForRepo;
 
         calls.push(
-          limit(() => action(octokit, k, secrets[k], repo, config.DRY_RUN))
+          limit(() =>
+            action(
+              octokit,
+              k,
+              secrets[k],
+              repo,
+              config.ENVIRONMENT,
+              config.DRY_RUN
+            )
+          )
         );
       }
     }
     await Promise.all(calls);
-  } catch (error) {
+  } catch (error: any) {
     /* istanbul ignore next */
     core.error(error);
     /* istanbul ignore next */
