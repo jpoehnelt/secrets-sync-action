@@ -17,6 +17,7 @@
 import * as core from "@actions/core";
 
 export interface Config {
+  GITHUB_API_URL: string;
   GITHUB_TOKEN: string;
   SECRETS: string[];
   REPOSITORIES: string[];
@@ -29,6 +30,10 @@ export interface Config {
 
 export function getConfig(): Config {
   const config = {
+    GITHUB_API_URL:
+      core.getInput("GITHUB_API_URL") ||
+      process.env.GITHUB_API_URL ||
+      "https://api.github.com",
     GITHUB_TOKEN: core.getInput("GITHUB_TOKEN", { required: true }),
     CONCURRENCY: Number(core.getInput("CONCURRENCY")),
     RETRIES: Number(core.getInput("RETRIES")),
