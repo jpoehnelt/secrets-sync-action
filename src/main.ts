@@ -12,6 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * New environment variable added
  */
 
 import * as core from "@actions/core";
@@ -77,7 +78,7 @@ export async function run(): Promise<void> {
           DRY_RUN: config.DRY_RUN,
           FOUND_REPOS: repoNames,
           FOUND_SECRETS: Object.keys(secrets),
-          ENVIRONMENT: config.ENVIRONMENT, /* new environment variable */
+          ENVIRONMENT: config.ENVIRONMENT,
         },
         null,
         2
