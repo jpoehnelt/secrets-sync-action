@@ -9,9 +9,15 @@ inputs:
   github_token:
     description: "Token to use to get repos and write secrets"
     required: true
+  github_api_url:
+    description: |
+      Override default GitHub API URL. When not provided, the action will attempt
+      to use an environment variable provided by the GitHub Action runner environment
+      defaults.
+    required: false
   repositories:
     description: |
-      New line deliminated regex expressions to select repositories. Repositires
+      New line deliminated regex expressions to select repositories. Repositories
       are limited to those in which the token user is an owner or collaborator.
       Set `REPOSITORIES_LIST_REGEX` to `False` to use a hardcoded list of
       repositories. Archived repositories will be ignored.

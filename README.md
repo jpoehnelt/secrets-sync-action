@@ -18,6 +18,10 @@ A Github Action that can sync secrets from one repository to many others. This a
 
 **Required** Newline delimited regex expressions to select repositories. Repositories are limited to those in which the token user is an owner or collaborator. Set `repositories_list_regex` to `False` to use a hardcoded list of repositories. Archived repositories will be ignored.
 
+### `github_api_url`
+
+Override default GitHub API URL. When not provided, the action will attempt to use an environment variable provided by the GitHub Action runner environment defaults.
+
 ### `repositories_list_regex`
 
 If this value is `true` (default), the action will find all repositories available to the token user and filter based upon the regex provided. If it is `false`, it is expected that `repositories` will be an a newline delimited list in the form of org/name.
@@ -54,6 +58,7 @@ uses: google/secrets-sync-action
       ${{github.repository}}
     DRY_RUN: true
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_SECRETS }}
+    GITHUB_API_URL: ${{ secrets.CUSTOM_GITHUB_API_URL }}
     CONCURRENCY: 10
   env:
     FOO: ${{github.run_id}}

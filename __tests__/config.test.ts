@@ -28,6 +28,8 @@ describe("getConfig", () => {
   const SECRETS = ["FOO.*", "^BAR$"];
   const REPOSITORIES = ["google/baz.*", "^google/foo$"];
   const REPOSITORIES_LIST_REGEX = true;
+  const GITHUB_API_URL = "https://api.github.com";
+  const GITHUB_API_URL_OVERRIDE = "overridden_api_url";
   const GITHUB_TOKEN = "token";
   const DRY_RUN = false;
   const RETRIES = 3;
@@ -36,6 +38,7 @@ describe("getConfig", () => {
   const ENVIRONMENT = "production";
 
   const inputs = {
+    INPUT_GITHUB_API_URL: String(GITHUB_API_URL),
     INPUT_GITHUB_TOKEN: GITHUB_TOKEN,
     INPUT_SECRETS: SECRETS.join("\n"),
     INPUT_REPOSITORIES: REPOSITORIES.join("\n"),
@@ -63,6 +66,7 @@ describe("getConfig", () => {
     process.env = { ...process.env, ...inputs };
 
     expect(getConfig()).toEqual({
+      GITHUB_API_URL,
       GITHUB_TOKEN,
       SECRETS,
       REPOSITORIES,
@@ -73,6 +77,21 @@ describe("getConfig", () => {
       RUN_DELETE,
       ENVIRONMENT,
     });
+  });
+
+  test("getConfig GITHUB_API_URL has fallback value", async () => {
+    const inputsWithoutApiUrl = inputs;
+    delete inputsWithoutApiUrl.INPUT_GITHUB_API_URL;
+    delete process.env.GITHUB_API_URL;
+
+    process.env = { ...process.env, ...inputsWithoutApiUrl };
+    expect(getConfig().GITHUB_API_URL).toEqual(GITHUB_API_URL);
+  });
+
+  test("getConfig GITHUB_API_URL uses process.env.GITHUB_API_URL when present", async () => {
+    process.env = { ...process.env, ...inputs };
+    process.env.GITHUB_API_URL = GITHUB_API_URL_OVERRIDE;
+    expect(getConfig().GITHUB_API_URL).toEqual(GITHUB_API_URL_OVERRIDE);
   });
 
   test("getConfig dry run should work with multiple values of true", async () => {
