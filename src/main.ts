@@ -77,7 +77,7 @@ export async function run(): Promise<void> {
           DRY_RUN: config.DRY_RUN,
           FOUND_REPOS: repoNames,
           FOUND_SECRETS: Object.keys(secrets),
-          ENVIRONMENT: config.ENVIRONMENT,
+          ENVIRONMENT: config.ENVIRONMENT, // new environment variable
         },
         null,
         2
