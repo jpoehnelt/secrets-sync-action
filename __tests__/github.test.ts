@@ -20,9 +20,10 @@ import {
   DefaultOctokit,
   filterReposByPatterns,
   listAllMatchingRepos,
+  getRepos,
   publicKeyCache,
   setSecretForRepo,
-  deleteSecretForRepo
+  deleteSecretForRepo,
 } from "../src/github";
 
 // @ts-ignore-next-line
@@ -39,11 +40,11 @@ beforeAll(() => {
     REPOSITORIES: [".*"],
     REPOSITORIES_LIST_REGEX: true,
     DRY_RUN: false,
-    RETRIES: 3
+    RETRIES: 3,
   });
 
   octokit = DefaultOctokit({
-    auth: ""
+    auth: "",
   });
 });
 
@@ -59,7 +60,7 @@ describe("listing repos from github", () => {
       .reply(200, [
         fixture[0].response,
         fixture[0].response,
-        { archived: true, full_name: "foo/bar" }
+        { archived: true, full_name: "foo/bar" },
       ]);
 
     nock("https://api.github.com")
@@ -71,7 +72,7 @@ describe("listing repos from github", () => {
     const repos = await listAllMatchingRepos({
       patterns: [".*"],
       octokit,
-      pageSize
+      pageSize,
     });
 
     expect(repos.length).toEqual(3);
@@ -81,7 +82,33 @@ describe("listing repos from github", () => {
     const repos = await listAllMatchingRepos({
       patterns: ["octokit.*"],
       octokit,
-      pageSize
+      pageSize,
+    });
+
+    expect(repos.length).toEqual(3);
+  });
+});
+
+describe("getting single repos from github", () => {
+  nock.cleanAll();
+
+  const repo = fixture[0].response;
+
+  beforeEach(() => {
+    nock("https://api.github.com")
+      .persist()
+      .get(`/repos/${repo.full_name}`)
+      .reply(fixture[0].status, fixture[0].response);
+  });
+
+  test("getRepos returns from multiple pages", async () => {
+    const repos = await getRepos({
+      patterns: [
+        fixture[0].response.full_name,
+        fixture[0].response.full_name,
+        fixture[0].response.full_name,
+      ],
+      octokit,
     });
 
     expect(repos.length).toEqual(3);
@@ -97,12 +124,14 @@ describe("setSecretForRepo", () => {
   const repo = fixture[0].response;
   const publicKey = {
     key_id: "1234",
-    key: "HRkzRZD1+duhfvNvY8eiCPb+ihIjbvkvRyiehJCs8Vc="
+    key: "HRkzRZD1+duhfvNvY8eiCPb+ihIjbvkvRyiehJCs8Vc=",
   };
 
   jest.setTimeout(30000);
 
   const secrets = { FOO: "BAR" };
+
+  const repoEnvironment = "production";
 
   let publicKeyMock: nock.Scope;
   let setSecretMock: nock.Scope;
@@ -113,8 +142,9 @@ describe("setSecretForRepo", () => {
     publicKeyMock = nock("https://api.github.com")
       .get(`/repos/${repo.full_name}/actions/secrets/public-key`)
       .reply(200, publicKey);
+
     setSecretMock = nock("https://api.github.com")
-      .put(`/repos/${repo.full_name}/actions/secrets/FOO`, body => {
+      .put(`/repos/${repo.full_name}/actions/secrets/FOO`, (body) => {
         expect(body.encrypted_value).toBeTruthy();
         expect(body.key_id).toEqual(publicKey.key_id);
         return body;
@@ -123,18 +153,94 @@ describe("setSecretForRepo", () => {
   });
 
   test("setSecretForRepo should retrieve public key", async () => {
-    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, true);
+    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", true);
     expect(publicKeyMock.isDone()).toBeTruthy();
   });
 
   test("setSecretForRepo should not set secret with dry run", async () => {
-    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, true);
+    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", true);
     expect(publicKeyMock.isDone()).toBeTruthy();
     expect(setSecretMock.isDone()).toBeFalsy();
   });
 
-  test("setSecretForRepo should should call set secret endpoint", async () => {
-    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, false);
+  test("setSecretForRepo should call set secret endpoint", async () => {
+    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", false);
+    expect(nock.isDone()).toBeTruthy();
+  });
+});
+
+describe("setSecretForRepo with environment", () => {
+  const repo = fixture[0].response;
+  const publicKey = {
+    key_id: "1234",
+    key: "HRkzRZD1+duhfvNvY8eiCPb+ihIjbvkvRyiehJCs8Vc=",
+  };
+
+  jest.setTimeout(30000);
+
+  const secrets = { FOO: "BAR" };
+
+  const repoEnvironment = "production";
+
+  let environmentPublicKeyMock: nock.Scope;
+  let setEnvironmentSecretMock: nock.Scope;
+
+  beforeEach(() => {
+    nock.cleanAll();
+    publicKeyCache.clear();
+
+    environmentPublicKeyMock = nock("https://api.github.com")
+      .get(
+        `/repositories/${repo.id}/environments/${repoEnvironment}/secrets/public-key`
+      )
+      .reply(200, publicKey);
+
+    setEnvironmentSecretMock = nock("https://api.github.com")
+      .put(
+        `/repositories/${repo.id}/environments/${repoEnvironment}/secrets/FOO`,
+        (body) => {
+          expect(body.encrypted_value).toBeTruthy();
+          expect(body.key_id).toEqual(publicKey.key_id);
+          return body;
+        }
+      )
+      .reply(200);
+  });
+
+  test("setSecretForRepo should retrieve public key", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      true
+    );
+    expect(environmentPublicKeyMock.isDone()).toBeTruthy();
+  });
+
+  test("setSecretForRepo should not set secret with dry run", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      true
+    );
+    expect(environmentPublicKeyMock.isDone()).toBeTruthy();
+    expect(setEnvironmentSecretMock.isDone()).toBeFalsy();
+  });
+
+  test("setSecretForRepo should call set secret endpoint", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      false
+    );
     expect(nock.isDone()).toBeTruthy();
   });
 });
@@ -155,12 +261,56 @@ describe("deleteSecretForRepo", () => {
   });
 
   test("deleteSecretForRepo should not delete secret with dry run", async () => {
-    await deleteSecretForRepo(octokit, "FOO", secrets.FOO, repo, true);
+    await deleteSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", true);
     expect(deleteSecretMock.isDone()).toBeFalsy();
   });
 
   test("deleteSecretForRepo should call set secret endpoint", async () => {
-    await deleteSecretForRepo(octokit, "FOO", secrets.FOO, repo, false);
+    await deleteSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", false);
+    expect(nock.isDone()).toBeTruthy();
+  });
+});
+
+describe("deleteSecretForRepo with environment", () => {
+  const repo = fixture[0].response;
+
+  const repoEnvironment = "production";
+
+  jest.setTimeout(30000);
+
+  const secrets = { FOO: "BAR" };
+  let deleteSecretMock: nock.Scope;
+
+  beforeEach(() => {
+    nock.cleanAll();
+    deleteSecretMock = nock("https://api.github.com")
+      .delete(
+        `/repositories/${repo.id}/environments/${repoEnvironment}/secrets/FOO`
+      )
+      .reply(200);
+  });
+
+  test("deleteSecretForRepo should not delete secret with dry run", async () => {
+    await deleteSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      true
+    );
+    expect(deleteSecretMock.isDone()).toBeFalsy();
+  });
+
+  test("deleteSecretForRepo should call set secret endpoint", async () => {
+    await deleteSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      false
+    );
     expect(nock.isDone()).toBeTruthy();
   });
 });

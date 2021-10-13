@@ -56,6 +56,12 @@ inputs:
       When set to `true`, the action will find and delete the selected secrets from repositories. Defaults to `false`.
     default: false
     required: false
+  environment:
+    default: ""
+    description: |
+      If this value is set, the action will set the secrets to the repositories 
+      environment with the name of this value.
+    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'

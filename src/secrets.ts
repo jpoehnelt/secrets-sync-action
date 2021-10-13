@@ -25,14 +25,14 @@ export function getSecrets(
   patterns: string[],
   env: NodeJS.ProcessEnv = process.env
 ): { [key: string]: string } {
-  const regexPatterns = patterns.map(s => new RegExp(s));
+  const regexPatterns = patterns.map((s) => new RegExp(s));
   const keys = Object.keys(env);
 
   core.info(`Available env keys: ${JSON.stringify(keys)}`);
 
   return keys
     .filter((k: string) => {
-      return env[k] && regexPatterns.filter(r => r.test(k)).length;
+      return env[k] && regexPatterns.filter((r) => r.test(k)).length;
     })
     .reduce((o: { [key: string]: string }, k: string) => {
       // tell Github to mask this from logs
