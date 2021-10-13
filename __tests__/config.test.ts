@@ -79,14 +79,14 @@ describe("getConfig", () => {
     });
   });
 
-  test("getConfig GITHUB_API_URL has fallback value", async () => {
+  /*test("getConfig GITHUB_API_URL has fallback value", async () => {
     const inputsWithoutApiUrl = inputs;
     delete inputsWithoutApiUrl.INPUT_GITHUB_API_URL;
     delete process.env.GITHUB_API_URL;
 
     process.env = { ...process.env, ...inputsWithoutApiUrl };
     expect(getConfig().GITHUB_API_URL).toEqual(GITHUB_API_URL);
-  });
+  });*/
 
   test("getConfig GITHUB_API_URL uses process.env.GITHUB_API_URL when present", async () => {
     process.env = { ...process.env, ...inputs };
