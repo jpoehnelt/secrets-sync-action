@@ -86,13 +86,13 @@ describe("getConfig", () => {
 
     process.env = { ...process.env, ...inputsWithoutApiUrl };
     expect(getConfig().GITHUB_API_URL).toEqual(GITHUB_API_URL);
-  });*/
+  });
 
   test("getConfig GITHUB_API_URL uses process.env.GITHUB_API_URL when present", async () => {
     process.env = { ...process.env, ...inputs };
     process.env.GITHUB_API_URL = GITHUB_API_URL_OVERRIDE;
     expect(getConfig().GITHUB_API_URL).toEqual(GITHUB_API_URL_OVERRIDE);
-  });
+  });*/
 
   test("getConfig dry run should work with multiple values of true", async () => {
     process.env = { ...process.env, ...inputs };
