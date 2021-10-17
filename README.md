@@ -12,11 +12,11 @@ A Github Action that can sync secrets from one repository to many others. This a
 
 ### `github_token`
 
-**Required** Token to use to get repos and write secrets. `${{secrets.GITHUB_TOKEN}}` will **not** work.
+**Required**, Token to use to get repos and write secrets. `${{secrets.GITHUB_TOKEN}}` will **not** work.
 
 ### `repositories`
 
-**Required** Newline delimited regex expressions to select repositories. Repositories are limited to those in which the token user is an owner or collaborator. Set `repositories_list_regex` to `False` to use a hardcoded list of repositories. Archived repositories will be ignored.
+**Required**, Newline delimited regex expressions to select repositories. Repositories are limited to those in which the token user is an owner or collaborator. Set `repositories_list_regex` to `False` to use a hardcoded list of repositories. Archived repositories will be ignored.
 
 ### `github_api_url`
 
@@ -24,11 +24,11 @@ Override default GitHub API URL. When not provided, the action will attempt to u
 
 ### `repositories_list_regex`
 
-If this value is `true` (default), the action will find all repositories available to the token user and filter based upon the regex provided. If it is `false`, it is expected that `repositories` will be an a newline delimited list in the form of org/name.
+If this value is `true` (default), the action will find all repositories available to the token user and filter based upon the regex provided. If it is `false`, it is expected that `repositories` will be a newline delimited list in the form of org/name.
 
 ### `secrets`
 
-**Required** Newline delimited regex expressions to select values from `process.env`. Use the action env to pass secrets from the repository in which this action runs with the `env` attribute of the step.
+**Required**, Newline delimited regex expressions to select values from `process.env`. Use the action env to pass secrets from the repository in which this action runs with the `env` attribute of the step.
 
 ### `retries`
 
