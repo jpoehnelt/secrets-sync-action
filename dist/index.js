@@ -720,6 +720,7 @@ function run() {
             }
             const octokit = (0, github_1.DefaultOctokit)({
                 auth: config.GITHUB_TOKEN,
+                baseUrl: config.GITHUB_API_URL,
             });
             let repos;
             if (config.REPOSITORIES_LIST_REGEX) {
@@ -4102,6 +4103,9 @@ exports.getConfig = void 0;
 const core = __importStar(__webpack_require__(470));
 function getConfig() {
     const config = {
+        GITHUB_API_URL: core.getInput("GITHUB_API_URL") ||
+            process.env.GITHUB_API_URL ||
+            "https://api.github.com",
         GITHUB_TOKEN: core.getInput("GITHUB_TOKEN", { required: true }),
         CONCURRENCY: Number(core.getInput("CONCURRENCY")),
         RETRIES: Number(core.getInput("RETRIES")),

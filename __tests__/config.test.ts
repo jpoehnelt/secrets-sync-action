@@ -28,6 +28,8 @@ describe("getConfig", () => {
   const SECRETS = ["FOO.*", "^BAR$"];
   const REPOSITORIES = ["google/baz.*", "^google/foo$"];
   const REPOSITORIES_LIST_REGEX = true;
+  const GITHUB_API_URL = "https://api.github.com";
+  const GITHUB_API_URL_OVERRIDE = "overridden_api_url";
   const GITHUB_TOKEN = "token";
   const DRY_RUN = false;
   const RETRIES = 3;
@@ -35,7 +37,21 @@ describe("getConfig", () => {
   const RUN_DELETE = false;
   const ENVIRONMENT = "production";
 
-  const inputs = {
+  // Must implement because operands for delete must be optional in typescript >= 4.0
+  interface Inputs {
+    INPUT_GITHUB_API_URL?: string;
+    INPUT_GITHUB_TOKEN: string;
+    INPUT_SECRETS: string;
+    INPUT_REPOSITORIES: string;
+    INPUT_REPOSITORIES_LIST_REGEX: string;
+    INPUT_DRY_RUN: string;
+    INPUT_RETRIES: string;
+    INPUT_CONCURRENCY: string;
+    INPUT_RUN_DELETE: string;
+    INPUT_ENVIRONMENT: string;
+  }
+  const inputs: Inputs = {
+    INPUT_GITHUB_API_URL: String(GITHUB_API_URL),
     INPUT_GITHUB_TOKEN: GITHUB_TOKEN,
     INPUT_SECRETS: SECRETS.join("\n"),
     INPUT_REPOSITORIES: REPOSITORIES.join("\n"),
@@ -63,6 +79,7 @@ describe("getConfig", () => {
     process.env = { ...process.env, ...inputs };
 
     expect(getConfig()).toEqual({
+      GITHUB_API_URL,
       GITHUB_TOKEN,
       SECRETS,
       REPOSITORIES,
@@ -73,6 +90,21 @@ describe("getConfig", () => {
       RUN_DELETE,
       ENVIRONMENT,
     });
+  });
+
+  test("getConfig GITHUB_API_URL has fallback value", async () => {
+    const inputsWithoutApiUrl = inputs;
+    delete inputsWithoutApiUrl.INPUT_GITHUB_API_URL;
+    delete process.env.GITHUB_API_URL;
+
+    process.env = { ...process.env, ...inputsWithoutApiUrl };
+    expect(getConfig().GITHUB_API_URL).toEqual(GITHUB_API_URL);
+  });
+
+  test("getConfig GITHUB_API_URL uses process.env.GITHUB_API_URL when present", async () => {
+    process.env = { ...process.env, ...inputs };
+    process.env.GITHUB_API_URL = GITHUB_API_URL_OVERRIDE;
+    expect(getConfig().GITHUB_API_URL).toEqual(GITHUB_API_URL_OVERRIDE);
   });
 
   test("getConfig dry run should work with multiple values of true", async () => {
