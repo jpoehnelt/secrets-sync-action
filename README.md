@@ -46,6 +46,10 @@ Run everything except for secret create and update functionality.
 
 When set to `true`, the action will find and delete the selected secrets from repositories. Defaults to `false`.
 
+### `environment`
+
+If this value is set to the name of a valid environment in the target repositories, the action will not set repository secrets but instead only set environment secrets for the specified environment. When not set, will set repository secrets only.
+
 ## Usage
 
 ```yaml
