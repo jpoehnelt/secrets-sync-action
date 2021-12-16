@@ -18,8 +18,8 @@ import { getConfig } from "../src/config";
 
 function clearInputs() {
   Object.keys(process.env)
-    .filter(k => k.match(/INPUT_.*/))
-    .forEach(k => {
+    .filter((k) => k.match(/INPUT_.*/))
+    .forEach((k) => {
       process.env[k] = "";
     });
 }
@@ -35,8 +35,22 @@ describe("getConfig", () => {
   const RETRIES = 3;
   const CONCURRENCY = 50;
   const RUN_DELETE = false;
+  const ENVIRONMENT = "production";
 
-  const inputs = {
+  // Must implement because operands for delete must be optional in typescript >= 4.0
+  interface Inputs {
+    INPUT_GITHUB_API_URL?: string;
+    INPUT_GITHUB_TOKEN: string;
+    INPUT_SECRETS: string;
+    INPUT_REPOSITORIES: string;
+    INPUT_REPOSITORIES_LIST_REGEX: string;
+    INPUT_DRY_RUN: string;
+    INPUT_RETRIES: string;
+    INPUT_CONCURRENCY: string;
+    INPUT_RUN_DELETE: string;
+    INPUT_ENVIRONMENT: string;
+  }
+  const inputs: Inputs = {
     INPUT_GITHUB_API_URL: String(GITHUB_API_URL),
     INPUT_GITHUB_TOKEN: GITHUB_TOKEN,
     INPUT_SECRETS: SECRETS.join("\n"),
@@ -45,7 +59,8 @@ describe("getConfig", () => {
     INPUT_DRY_RUN: String(DRY_RUN),
     INPUT_RETRIES: String(RETRIES),
     INPUT_CONCURRENCY: String(CONCURRENCY),
-    INPUT_RUN_DELETE: String(RUN_DELETE)
+    INPUT_RUN_DELETE: String(RUN_DELETE),
+    INPUT_ENVIRONMENT: String(ENVIRONMENT),
   };
 
   beforeEach(() => {
@@ -72,7 +87,8 @@ describe("getConfig", () => {
       DRY_RUN,
       RETRIES,
       CONCURRENCY,
-      RUN_DELETE
+      RUN_DELETE,
+      ENVIRONMENT,
     });
   });
 
@@ -104,7 +120,7 @@ describe("getConfig", () => {
       ["False", false],
       ["FALSE", false],
       ["foo", false],
-      ["", false]
+      ["", false],
     ];
 
     for (const [value, expected] of cases) {
