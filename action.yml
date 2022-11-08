@@ -63,5 +63,5 @@ inputs:
       environment with the name of this value.
     required: false
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'dist/index.js'
