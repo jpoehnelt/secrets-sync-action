@@ -53,7 +53,7 @@ If this value is set to the name of a valid environment in the target repositori
 ## Usage
 
 ```yaml
-uses: google/secrets-sync-action
+uses: google/secrets-sync-action@[insert version or commit]
   with:
     SECRETS: |
       ^FOO$
@@ -61,7 +61,7 @@ uses: google/secrets-sync-action
     REPOSITORIES: |
       ${{github.repository}}
     DRY_RUN: true
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_SECRETS }}
+    GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
     GITHUB_API_URL: ${{ secrets.CUSTOM_GITHUB_API_URL }}
     CONCURRENCY: 10
   env:
