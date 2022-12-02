@@ -12,7 +12,7 @@ A Github Action that can sync secrets from one repository to many others. This a
 
 ### `github_token`
 
-**Required**, Token to use to get repos and write secrets. `${{secrets.GITHUB_TOKEN}}` will **not** work.
+**Required**, Token to use to get repos and write secrets. `${{secrets.GITHUB_TOKEN}}` will **not** work as it does not have the necessary scope for other repositories. A "Classic" personal access token is required. The "Fine-grained" tokens cannot be used as they do not support the GraphQL API at this time.
 
 ### `repositories`
 
@@ -61,7 +61,7 @@ uses: google/secrets-sync-action@[insert version or commit]
     REPOSITORIES: |
       ${{github.repository}}
     DRY_RUN: true
-    GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+    GITHUB_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN_CLASSIC }}
     GITHUB_API_URL: ${{ secrets.CUSTOM_GITHUB_API_URL }}
     CONCURRENCY: 10
   env:
