@@ -42,6 +42,7 @@ jobs:
         ref: master 
     - name: Semantic Release
       run: |
+        npm ci
         npx semantic-release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
