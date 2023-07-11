@@ -41,12 +41,7 @@ jobs:
       with:
         ref: master 
     - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v2
-      with:
-        extra_plugins: |
-          "@semantic-release/commit-analyzer"
-          "@semantic-release/release-notes-generator"
-          "@semantic-release/git
-          "@semantic-release/github
+      run: |
+        npx semantic-release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -35,6 +35,10 @@
   "devDependencies": {
     "@octokit/fixtures": "^21.0.2",
     "@octokit/types": "^6.31.1",
+    "@semantic-release/commit-analyzer": "^10.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^9.0.3",
+    "@semantic-release/release-notes-generator": "^11.0.4",
     "@types/jest": "^24.0.23",
     "@types/node": "^12.12.30",
     "@types/tmp": "^0.1.0",
@@ -49,6 +53,7 @@
     "js-yaml": "^3.13.1",
     "nock": "^12.0.3",
     "prettier": "^2.4.1",
+    "semantic-release": "^21.0.7",
     "ts-jest": "^24.2.0",
     "typescript": "^4.0.0"
   }
