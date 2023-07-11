@@ -12,7 +12,7 @@ A Github Action that can sync secrets from one repository to many others. This a
 
 ### `github_token`
 
-**Required**, Token to use to get repos and write secrets. `${{secrets.GITHUB_TOKEN}}` will **not** work as it does not have the necessary scope for other repositories. A "Classic" personal access token is required. The "Fine-grained" tokens cannot be used as they do not support the GraphQL API at this time.
+**Required**, Token to use to get repos and write secrets. `${{secrets.GITHUB_TOKEN}}` will **not** work as it does not have the necessary scope for other repositories. This token should have the full "repo" scope. In older instances of GitHub, a fine-grained token may not support the required GraphQL API and a "Classic" personal access token would be required. As this is deprecated, please try a fine-grained token first.
 
 ### `repositories`
 
