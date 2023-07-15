@@ -1,0 +1,16 @@
+name: Update tags
+on:
+  release:
+    types: [released]
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  update-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/publish-action@v0.2.2
+        with:
+          source-tag: ${{ github.event.release.tag_name }}

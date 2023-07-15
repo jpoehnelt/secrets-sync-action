@@ -1,0 +1,58 @@
+name: Test action
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - .gitignore
+      - .vscode/**
+      - .github/**
+      - "!.github/workflows/test-action.yml"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - .gitignore
+      - .vscode/**
+      - .github/**
+      - "!.github/workflows/test-action.yml"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: set secret on explicit repos
+        uses: ./
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: true
+          repositories: |
+            community/community
+            nodejs/node
+            denoland/deno
+          secret: HELLO_WORLD=hello
+      - name: set secret on query 'user:sindresorhus topic:nodejs' repos
+        uses: ./
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: true
+          query: user:sindresorhus topic:nodejs
+          secret: HELLO_WORLD=hello
+      - name: use 'delete-secret:' instead of 'set-secret:'
+        uses: ./
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: true
+          query: user:sindresorhus topic:nodejs
+          delete-secret: HELLO_WORLD=hello
