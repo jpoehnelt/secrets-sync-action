@@ -157,10 +157,11 @@ available to specific repositories under that organization.
   with:
     token: ${{ secrets.USER_SECRETS_TOKEN }}
     organization: octocat
+    vsibility: selected
     repositories: |
       octocat/our-lib
       octocat/awesome-app
-    app: dependabot
+    secrets-app: dependabot
     set-secrets: |
       NPM_TOKEN=${{ secrets.NPM_TOKEN }}
 ```

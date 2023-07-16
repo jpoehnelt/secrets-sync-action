@@ -1,58 +1,103 @@
+# Copyright 2023 Jacob Hummer
+# SPDX-License-Identifier: Apache-2.0
 name: Test action
 on:
   push:
-    branches: [main]
+    branches: "master"
     paths-ignore:
+      - .gitignore
       - LICENSE
       - README.md
-      - .gitignore
-      - .vscode/**
       - .github/**
       - "!.github/workflows/test-action.yml"
   pull_request:
-    branches: [main]
     paths-ignore:
+      - .gitignore
       - LICENSE
       - README.md
-      - .gitignore
-      - .vscode/**
       - .github/**
       - "!.github/workflows/test-action.yml"
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref_name }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
-permissions:
-  contents: write
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+  test-action-set-secrets-repository:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: set secret on explicit repos
-        uses: ./
+      - uses: ./
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
+          mode: set-secrets
+          repository: github/docs
+          secrets: |
+            HELLO=world
+            MESSAGE=hello
+  test-action-set-variables-repositories:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          dry-run: true
+          mode: set-variables
           repositories: |
-            community/community
-            nodejs/node
-            denoland/deno
-          secret: HELLO_WORLD=hello
-      - name: set secret on query 'user:sindresorhus topic:nodejs' repos
-        uses: ./
+            github/.github
+            octocat/hello-world
+          variable: |
+            HELLO=world
+            MESSAGE=hello
+  test-action-delete-secrets-query-dependabot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
+          mode: delete-secrets
+          app: dependabot
           query: user:sindresorhus topic:nodejs
-          secret: HELLO_WORLD=hello
-      - name: use 'delete-secret:' instead of 'set-secret:'
-        uses: ./
+          secret: |
+            HELLO
+            MESSAGE
+  test-action-delete-variables:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
-          query: user:sindresorhus topic:nodejs
-          delete-secret: HELLO_WORLD=hello
+          mode: delete-variables
+          query: org:nodejs node
+          variables: |
+            HELLO
+            MESSAGE
+  test-action-set-organization-secrets-selected:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          dry-run: true
+          mode: set-secrets
+          organization: github
+          secrets: |
+            HELLO=world
+            MESSAGE=hello
+          visibility: selected
+          repositories: |
+            github/docs
+            github/feedback
+  test-action-set-user-secret-codespaces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          dry-run: true
+          mode: set-secrets
+          user: github-actions
+          secrets: |
+            HELLO=world
+            MESSAGE=hello
+          app: codespaces

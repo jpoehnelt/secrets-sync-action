@@ -1,4 +1,6 @@
 #!/bin/sh
+# Copyright 2023 Jacob Hummer
+# SPDX-License-Identifier: Apache-2.0
 # Based on https://github.com/jcbhmr/deno_wrapper
 set -e
 # https://stackoverflow.com/a/29835459
@@ -20,7 +22,7 @@ chronic() (
 if [ ! -d "$deno_dir" ]; then
   # https://github.com/denoland/deno_install#readme
   export DENO_INSTALL=$deno_dir
-  curl -fsSL https://deno.land/x/install/install.sh | chronic sh -s "v1.33.4"
+  curl -fsSL https://deno.land/x/install/install.sh | chronic sh -s "v1.35.1"
 fi
 
 # https://github.com/denoland/deno_install/blob/master/install.sh#L53

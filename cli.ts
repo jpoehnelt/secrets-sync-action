@@ -5,19 +5,12 @@ import assert from "node:assert";
 import * as core from "npm:@actions/core@^1.10.0";
 import { $ } from "npm:zx@^7.2.2";
 
-globalThis.addEventListener("error", (e) => core.setFailed(e.error.message));
-
-$.verbose = false;
-if (core.isDebug()) {
-  $.verbose = true;
-}
-
-async function findAllRepositories(query: string): Promise<string> {
-  return (
-    await $`gh search repos -L 500 ${query} --json fullName -q .[].fullName`
-  )
+async function searchRepositories(query: string): Promise<string[]> {
+  // prettier-ignore
+  return (await $`gh search repos -L 500 ${query} --json fullName -q .[].fullName`)
     .toString()
-    .trim();
+    .trim()
+    .split(/\r?\n/g);
 }
 
 const token = core.getInput("token", { required: true });

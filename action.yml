@@ -1,6 +1,6 @@
 name: Set secrets action
 author: Jacob Hummer <jcbhmr@outlook.com> (https://jcbhmr.me/)
-description: 🔒 Set secrets on a single repo or multiple repos at once
+description: ⚙️ Set secrets or variables on multiple repos at once!
 branding:
   icon: lock
   color: yellow
@@ -26,37 +26,6 @@ inputs:
       this action. Defaults to false.
     required: true
     default: false
-  repository:
-    description: >
-      The repository to set the secrets on. This is required if you don't set
-      either "repositories" or "query". You must set at least one of
-      "repository", "repositories", or "query".
-  repositories:
-    description: >
-      A newline-separated list of repositories to set the secrets on. You must
-      set at least one of "repository", "repositories", or "query".
-  query:
-    description: >
-      A GitHub Search query to find repositories to set the secrets on. You must
-      set at least one of "repository", "repositories", or "query". This input
-      is useful if you want to dynamically expand the list of repositories to
-      set secrets on based on some criteria like "tag:nodejs" to auto-set the
-      NPM_TOKEN secret on all Node.js repos.
-  app:
-    description: >
-      Either "actions", "codespaces", or "dependabot". You can set secrets on
-      only one context at a time. The default is "actions" which is probably
-      what you want.
-    required: true
-    default: actions
-  secret:
-    description: >
-      A name-value pair like "HELLO_WORLD=hello". You must set at least one of
-      "secret" or "secrets".
-  secrets:
-    description: >
-      A newline-separated list of name-value pairs like "HELLO_WORLD=hello".
-      You must set at least one of "secret" or "secrets".
 runs:
   using: composite
   steps:
@@ -66,9 +35,3 @@ runs:
         INPUT_TOKEN: ${{ inputs.token }}
         INPUT_GITHUB_SERVER_URL: ${{ inputs.github-server-url }}
         INPUT_DRY_RUN: ${{ inputs.dry-run }}
-        INPUT_REPOSITORY: ${{ inputs.repository }}
-        INPUT_REPOSITORIES: ${{ inputs.repositories }}
-        INPUT_QUERY: ${{ inputs.query }}
-        INPUT_APP: ${{ inputs.app }}
-        INPUT_SECRET: ${{ inputs.secret }}
-        INPUT_SECRETS: ${{ inputs.secrets }}
