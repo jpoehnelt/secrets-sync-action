@@ -26,18 +26,18 @@ inputs:
       this action. Defaults to false.
     required: true
     default: false
-  mode:
-  repository:
-  repositories:
-  query:
-  secret:
-  secrets:
-  variable:
-  variables:
-  organization:
-  user:
-  app:
-  environment:
+  mode: {}
+  repository: {}
+  repositories: {}
+  query: {}
+  secret: {}
+  secrets: {}
+  variable: {}
+  variables: {}
+  organization: {}
+  user: {}
+  app: {}
+  environment: {}
 runs:
   using: composite
   steps:
