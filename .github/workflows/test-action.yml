@@ -21,7 +21,7 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
 jobs:
-  test-action-set-secrets-repository:
+  test-action-set-secrets-repository-environment:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -33,6 +33,7 @@ jobs:
           secrets: |
             HELLO=world
             MESSAGE=hello
+          environment: github-pages
   test-action-set-variables-repositories:
     runs-on: ubuntu-latest
     steps:

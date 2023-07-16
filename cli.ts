@@ -4,6 +4,11 @@ import { readFile, writeFile } from "node:fs/promises";
 import assert from "node:assert";
 import * as core from "npm:@actions/core@^1.10.0";
 import { $ } from "npm:zx@^7.2.2";
+import { temporaryWrite } from "npm:tempy@^3.1.0";
+
+core.startGroup("process.env");
+console.table(process.env);
+core.endGroup();
 
 async function searchRepositories(query: string): Promise<string[]> {
   // prettier-ignore
@@ -13,63 +18,102 @@ async function searchRepositories(query: string): Promise<string[]> {
     .split(/\r?\n/g);
 }
 
-const token = core.getInput("token", { required: true });
-process.env.GITHUB_TOKEN = token;
-const githubServerURL = core.getInput("github_server_url", { required: true });
-process.env.GITHUB_SERVER_URL = githubServerURL;
-
-const dryRun = core.getBooleanInput("dry_run", { required: true });
-
-let repositories = core.getInput("repositories");
-const repository = core.getInput("repository");
-const query = core.getInput("query");
-assert(
-  repositories || repository || query,
-  "Must provide either repositories or query"
-);
-repositories ||= repository;
-repositories ||= await findAllRepositories(query);
-core.startGroup("repositories");
-core.info(repositories);
-core.endGroup();
-
-const app = core.getInput("app", { required: true });
-assert(
-  ["actions", "codespaces", "dependabot"].includes(app),
-  "app must be {actions|codespaces|dependabot}"
-);
-
-let secrets = core.getInput("secrets");
-const secret = core.getInput("secret");
-assert(secrets || secret, "Must provide either secrets or secret");
-secrets ||= secret;
-core.startGroup("secrets");
-core.info(secrets);
-core.endGroup();
-
-const envFile = await Deno.makeTempFile({ suffix: ".env" });
-globalThis.addEventListener("unload", () => Deno.removeSync(envFile));
-await writeFile(envFile, secrets);
-if (core.isDebug()) {
-  core.startGroup(envFile);
-  core.info(await readFile(envFile));
-  core.endGroup();
+async function getRepositories() {
+  if (core.getInput("repositories")) {
+    return core.getMultilineInput("repositories");
+  } else if (core.getInput("repository")) {
+    return core.getMultilineInput("repository");
+  } else if (core.getInput("query")) {
+    return await searchRepositories(core.getInput("query"));
+  } else {
+    throw new DOMException(
+      "Must provide repositories, repository, or query",
+      "NotSupportedError"
+    );
+  }
 }
 
-const results = await Promise.allSettled(
-  repositories
-    .split(/\r?\n/g)
-    .map((r) =>
-      dryRun
-        ? core.info(`gh secret set -R ${r} -a ${app} -f ${envFile}`)
-        : $`gh secret set -R ${r} -a ${app} -f ${envFile}`.then(() =>
-            core.info(`Successfully set ${r} ${app} secrets from ${envFile}`)
-          )
-    )
-);
-const failed = results.filter(
-  (r): r is PromiseRejectedResult => r.status === "rejected"
-);
-if (failed.length) {
-  throw new AggregateError(failed.map((r) => r.reason));
+process.env.GH_TOKEN = core.getInput("token");
+process.env.GH_HOST = new URL(core.getInput("github_server_url")).host;
+
+if (["set-secret", "set-secrets"].includes(core.getInput("mode"))) {
+  let envText: string;
+  if (core.getInput("secrets")) {
+    envText = core.getInput("secrets");
+  } else if (core.getInput("secret")) {
+    envText = core.getInput("secret");
+  } else {
+    throw new DOMException(
+      "Must provide secrets or secret",
+      "NotSupportedError"
+    );
+  }
+  const envPath = temporaryWrite(envText);
+
+  if (core.getInput("organization")) {
+    if (core.getInput("visibility") === "selected") {
+      const organization = core.getInput("organization");
+      const app = core.getInput("app");
+      const repositories = await getRepositories();
+      if (core.getBooleanInput("dry_run")) {
+        // prettier-ignore
+        console.log(`gh secret set -o ${organization} -a ${app} -f ${envPath} -r ${repositories.toString()}`)
+      } else {
+        // prettier-ignore
+        await $`gh secret set -o ${organization} -a ${app} -f ${envPath} -r ${repositories.toString()}`
+      }
+    } else {
+      const organization = core.getInput("organization");
+      const app = core.getInput("app");
+      if (core.getBooleanInput("dry_run")) {
+        console.log(`gh secret set -o ${organization} -a ${app} -f ${envPath}`);
+      } else {
+        await $`gh secret set -o ${organization} -a ${app} -f ${envPath}`;
+      }
+    }
+  } else if (core.getInput("user")) {
+    const user = core.getInput("user");
+    const app = core.getInput("app");
+    await $`gh secret set -u ${user} -a ${app} -f ${envPath}`;
+  } else {
+    const app = core.getInput("app");
+    for (const repository of await getRepositories()) {
+      if (core.getBooleanInput("dry_run")) {
+        console.log(`gh secret set -R ${repository} -a ${app} -f ${envPath}`);
+      } else {
+        await $`gh secret set -R ${repository} -a ${app} -f ${envPath}`;
+      }
+    }
+  }
+}
+//
+else if (["delete-secret", "delete-secrets"].includes(core.getInput("mode"))) {
+  if (core.getInput("organization")) {
+    const organization = core.getInput("organization");
+    const app = core.getInput("app");
+    if (core.getBooleanInput("dry_run")) {
+      console.log(`gh secret delete -o ${organization} -a ${app}`);
+    } else {
+      await $`gh secret delete -o ${organization} -a ${app}`;
+    }
+  } else if (core.getInput("user")) {
+    const user = core.getInput("user");
+    const app = core.getInput("app");
+    if (core.getBooleanInput("dry_run")) {
+      console.log(`gh secret delete -u ${user} -a ${app}`);
+    } else {
+      await $`gh secret delete -u ${user} -a ${app}`;
+    }
+  } else {
+    const app = core.getInput("app");
+    for (const repository of await getRepositories()) {
+      if (core.getBooleanInput("dry_run")) {
+        console.log(`gh secret delete -R ${repository} -a ${app}`);
+      } else {
+        await $`gh secret delete -R ${repository} -a ${app}`;
+      }
+    }
+  }
+} else {
+  throw new DOMException("Unknown mode", "NotSupportedError");
 }
