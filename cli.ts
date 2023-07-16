@@ -12,7 +12,7 @@ const dry$ = core.getBooleanInput("dry_run")
 
 async function searchRepositories(query: string): Promise<string[]> {
   // prettier-ignore
-  return (await $`gh search repos -L 500 ${query} --json fullName -q .[].fullName`)
+  return (await $`gh search repos -L 500 ${query.split(" ")} --json fullName -q .[].fullName`)
     .toString()
     .trim()
     .split(/\r?\n/g);
