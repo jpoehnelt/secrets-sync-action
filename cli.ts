@@ -6,9 +6,9 @@ import * as core from "npm:@actions/core@^1.10.0";
 import { $ } from "npm:zx@^7.2.2";
 import { temporaryWrite } from "npm:tempy@^3.1.0";
 
-core.startGroup("process.env");
-console.table(process.env);
-core.endGroup();
+const dry$ = core.getBooleanInput("dry_run")
+  ? (a: any, ...b: any[]) => console.log(String.raw({ raw: a }, ...b))
+  : $;
 
 async function searchRepositories(query: string): Promise<string[]> {
   // prettier-ignore
@@ -26,94 +26,132 @@ async function getRepositories() {
   } else if (core.getInput("query")) {
     return await searchRepositories(core.getInput("query"));
   } else {
-    throw new DOMException(
-      "Must provide repositories, repository, or query",
-      "NotSupportedError"
-    );
+    return undefined;
   }
 }
+
+async function setOrganizationSecrets(
+  organization: string,
+  secretsEnvFile: string,
+  app: "actions" | "dependabot" | "codespaces",
+  visibility: "private" | "all" | "selected",
+  repositories: string[] | undefined
+) {
+  if (visibility === "selected") {
+    // prettier-ignore
+    await dry$`gh secret set -o ${organization} -a ${app} -f ${secretsEnvFile} -v ${visibility} -r ${repositories!.toString()}`
+  } else {
+    // prettier-ignore
+    await dry$`gh secret set -o ${organization} -a ${app} -f ${secretsEnvFile} -v ${visibility}`
+  }
+}
+
+async function setOrganizationVariables(
+  organization: string,
+  variablesEnvFile: string,
+  app: "actions" | "dependabot",
+  visibility: "private" | "all" | "selected",
+  repositories: string[] | undefined
+) {
+  if (visibility === "selected") {
+    // prettier-ignore
+    await dry$`gh variable set -o ${organization} -a ${app} -f ${variablesEnvFile} -v ${visibility} -r ${repositories!.toString()}`
+  } else {
+    // prettier-ignore
+    await dry$`gh variable set -o ${organization} -a ${app} -f ${variablesEnvFile} -v ${visibility}`
+  }
+}
+
+async function setUserSecrets(
+  user: string,
+  secretsEnvFile: string,
+  app: "codespaces"
+) {
+  await dry$`gh secret set -u ${user} -a ${app} -f ${secretsEnvFile}`;
+}
+
+async function setRepositorySecrets(
+  repository: string,
+  secretsEnvFile: string,
+  app: "actions" | "dependabot" | "codespaces",
+  environment: string | undefined
+) {
+  if (environment) {
+    await dry$`gh secret set -R ${repository} -a ${app} -e ${environment} -f ${secretsEnvFile}`;
+  } else {
+    await dry$`gh secret set -R ${repository} -a ${app} -f ${secretsEnvFile}`;
+  }
+}
+
+async function setRepositoryVariables(
+  repository: string,
+  variablesEnvFile: string,
+  app: "actions" | "dependabot",
+  environment: string | undefined
+) {
+  if (environment) {
+    await dry$`gh variable set -R ${repository} -a ${app} -e ${environment} -f ${variablesEnvFile}`;
+  } else {
+    await dry$`gh variable set -R ${repository} -a ${app} -f ${variablesEnvFile}`;
+  }
+}
+
+core.startGroup("process.env");
+console.table(process.env);
+core.endGroup();
 
 process.env.GH_TOKEN = core.getInput("token");
 process.env.GH_HOST = new URL(core.getInput("github_server_url")).host;
 
-if (["set-secret", "set-secrets"].includes(core.getInput("mode"))) {
-  let envText: string;
-  if (core.getInput("secrets")) {
-    envText = core.getInput("secrets");
-  } else if (core.getInput("secret")) {
-    envText = core.getInput("secret");
-  } else {
-    throw new DOMException(
-      "Must provide secrets or secret",
-      "NotSupportedError"
-    );
-  }
-  const envPath = temporaryWrite(envText);
+const secretsEnvFile = await temporaryWrite(
+  core.getInput("secrets") || core.getInput("secret")
+);
+const variablesEnvFile = await temporaryWrite(
+  core.getInput("variables") || core.getInput("variable")
+);
+const repositories = await getRepositories();
 
+if (core.getInput("mode") === "set") {
   if (core.getInput("organization")) {
-    if (core.getInput("visibility") === "selected") {
-      const organization = core.getInput("organization");
-      const app = core.getInput("app");
-      const repositories = await getRepositories();
-      if (core.getBooleanInput("dry_run")) {
-        // prettier-ignore
-        console.log(`gh secret set -o ${organization} -a ${app} -f ${envPath} -r ${repositories.toString()}`)
-      } else {
-        // prettier-ignore
-        await $`gh secret set -o ${organization} -a ${app} -f ${envPath} -r ${repositories.toString()}`
-      }
-    } else {
-      const organization = core.getInput("organization");
-      const app = core.getInput("app");
-      if (core.getBooleanInput("dry_run")) {
-        console.log(`gh secret set -o ${organization} -a ${app} -f ${envPath}`);
-      } else {
-        await $`gh secret set -o ${organization} -a ${app} -f ${envPath}`;
-      }
-    }
+    await setOrganizationSecrets(
+      core.getInput("organization"),
+      secretsEnvFile,
+      core.getInput("app") as "actions" | "dependabot" | "codespaces",
+      core.getInput("visibility") as "private" | "all" | "selected",
+      repositories
+    );
+
+    await setOrganizationVariables(
+      core.getInput("organization"),
+      variablesEnvFile,
+      core.getInput("app") as "actions" | "dependabot",
+      core.getInput("visibility") as "private" | "all" | "selected",
+      repositories
+    );
   } else if (core.getInput("user")) {
-    const user = core.getInput("user");
-    const app = core.getInput("app");
-    await $`gh secret set -u ${user} -a ${app} -f ${envPath}`;
+    await setUserSecrets(
+      core.getInput("user"),
+      secretsEnvFile,
+      core.getInput("app") as "codespaces"
+    );
   } else {
-    const app = core.getInput("app");
-    for (const repository of await getRepositories()) {
-      if (core.getBooleanInput("dry_run")) {
-        console.log(`gh secret set -R ${repository} -a ${app} -f ${envPath}`);
-      } else {
-        await $`gh secret set -R ${repository} -a ${app} -f ${envPath}`;
-      }
+    for (const repository of repositories!) {
+      await setRepositorySecrets(
+        repository,
+        secretsEnvFile,
+        core.getInput("app") as "actions" | "dependabot" | "codespaces",
+        core.getInput("environment")
+      );
+
+      await setRepositoryVariables(
+        repository,
+        variablesEnvFile,
+        core.getInput("app") as "actions" | "dependabot",
+        core.getInput("environment")
+      );
     }
   }
-}
-//
-else if (["delete-secret", "delete-secrets"].includes(core.getInput("mode"))) {
-  if (core.getInput("organization")) {
-    const organization = core.getInput("organization");
-    const app = core.getInput("app");
-    if (core.getBooleanInput("dry_run")) {
-      console.log(`gh secret delete -o ${organization} -a ${app}`);
-    } else {
-      await $`gh secret delete -o ${organization} -a ${app}`;
-    }
-  } else if (core.getInput("user")) {
-    const user = core.getInput("user");
-    const app = core.getInput("app");
-    if (core.getBooleanInput("dry_run")) {
-      console.log(`gh secret delete -u ${user} -a ${app}`);
-    } else {
-      await $`gh secret delete -u ${user} -a ${app}`;
-    }
-  } else {
-    const app = core.getInput("app");
-    for (const repository of await getRepositories()) {
-      if (core.getBooleanInput("dry_run")) {
-        console.log(`gh secret delete -R ${repository} -a ${app}`);
-      } else {
-        await $`gh secret delete -R ${repository} -a ${app}`;
-      }
-    }
-  }
+} else if (core.getInput("mode") === "delete") {
 } else {
   throw new DOMException("Unknown mode", "NotSupportedError");
 }
