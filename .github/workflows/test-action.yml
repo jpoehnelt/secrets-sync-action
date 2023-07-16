@@ -30,7 +30,7 @@ jobs:
       - uses: ./
         with:
           dry-run: true
-          mode: set-secrets
+          mode: set
           repository: github/docs
           secrets: |
             HELLO=world
@@ -43,7 +43,7 @@ jobs:
       - uses: ./
         with:
           dry-run: true
-          mode: set-variables
+          mode: set
           repositories: |
             github/.github
             octocat/hello-world
@@ -57,7 +57,7 @@ jobs:
       - uses: ./
         with:
           dry-run: true
-          mode: delete-secrets
+          mode: delete
           app: dependabot
           query: user:sindresorhus topic:nodejs
           secret: |
@@ -70,7 +70,7 @@ jobs:
       - uses: ./
         with:
           dry-run: true
-          mode: delete-variables
+          mode: delete
           query: org:nodejs node
           variables: |
             HELLO
@@ -82,7 +82,7 @@ jobs:
       - uses: ./
         with:
           dry-run: true
-          mode: set-secrets
+          mode: set
           organization: github
           secrets: |
             HELLO=world
@@ -98,7 +98,7 @@ jobs:
       - uses: ./
         with:
           dry-run: true
-          mode: set-secrets
+          mode: set
           user: github-actions
           secrets: |
             HELLO=world

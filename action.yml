@@ -10,8 +10,8 @@ inputs:
       The GitHub PAT to use when setting secrets on other repos. You can't use
       the default secrets.GITHUB_TOKEN for this since it only covers the current
       repository. You'll need to create a PAT with access to the "secrets"
-      permission either for a single repo, multiple repos, or all repos. This
-      is required.
+      permission either for a single repo, multiple repos, or all repos. This is
+      required.
     required: true
   github-server-url:
     description: >
@@ -26,6 +26,18 @@ inputs:
       this action. Defaults to false.
     required: true
     default: false
+  mode:
+  repository:
+  repositories:
+  query:
+  secret:
+  secrets:
+  variable:
+  variables:
+  organization:
+  user:
+  app:
+  environment:
 runs:
   using: composite
   steps:
@@ -35,3 +47,15 @@ runs:
         INPUT_TOKEN: ${{ inputs.token }}
         INPUT_GITHUB_SERVER_URL: ${{ inputs.github-server-url }}
         INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_REPOSITORIES: ${{ inputs.repositories }}
+        INPUT_QUERY: ${{ inputs.query }}
+        INPUT_SECRET: ${{ inputs.secret }}
+        INPUT_SECRETS: ${{ inputs.secrets }}
+        INPUT_VARIABLE: ${{ inputs.variable }}
+        INPUT_VARIABLES: ${{ inputs.variables }}
+        INPUT_ORGANIZATION: ${{ inputs.organization }}
+        INPUT_USER: ${{ inputs.user }}
+        INPUT_APP: ${{ inputs.app }}
+        INPUT_ENVIRONMENT: ${{ inputs.environment }}
