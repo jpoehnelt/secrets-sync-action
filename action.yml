@@ -33,7 +33,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - if: inputs.mode == 'set-secrets'
+    - if: inputs.mode == 'set-secrets' || inputs.mode == 'set-secret'
       uses: jcbhmr/set-secrets@main
       with:
         token: ${{ inputs.token }}
@@ -49,7 +49,7 @@ runs:
         app: ${{ inputs.app }}
         environment: ${{ inputs.environment }}
         visibility: ${{ inputs.visibility }}
-    - if: inputs.mode == 'delete-secrets'
+    - if: inputs.mode == 'delete-secrets' || inputs.mode == 'delete-secret'
       uses: jcbhmr/delete-secrets@main
       with:
         token: ${{ inputs.token }}
