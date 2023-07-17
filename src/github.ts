@@ -17,6 +17,7 @@
 import * as core from "@actions/core";
 
 import { Octokit } from "@octokit/rest";
+import { RequestOptions } from "@octokit/types";
 import { encrypt } from "./utils";
 import { getConfig } from "./config";
 import { retry } from "@octokit/plugin-retry";
@@ -36,18 +37,18 @@ export const publicKeyCache = new Map<Repository, PublicKey>();
 
 const RetryOctokit = Octokit.plugin(retry);
 
-export function DefaultOctokit({ ...octokitOptions }): any {
+export function DefaultOctokit({ ...RequestOptions }: RequestOptions): Octokit {
   const retries = getConfig().RETRIES;
 
   /* istanbul ignore next */
-  function onRateLimit(retryAfter: any, options: any): boolean {
+  function onRateLimit(retryAfter: number, options: RequestOptions): boolean {
     core.warning(
-      `Request quota exhausted for request ${options.method} ${options.url}`
+      `Request quota exhausted for request ${options.method} ${options.url}`,
     );
 
-    if (options.request.retryCount < retries) {
+    if (options.request?.retryCount < retries) {
       core.warning(
-        `Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`
+        `Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`,
       );
       return true;
     }
@@ -56,12 +57,12 @@ export function DefaultOctokit({ ...octokitOptions }): any {
   }
 
   /* istanbul ignore next */
-  function onAbuseLimit(retryAfter: any, options: any): boolean {
+  function onAbuseLimit(retryAfter: number, options: RequestOptions): boolean {
     core.warning(`Abuse detected for request ${options.method} ${options.url}`);
 
-    if (options.request.retryCount < retries) {
+    if (options.request?.retryCount < retries) {
       core.warning(
-        `Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`
+        `Retrying request ${options.method} ${options.url} after ${retryAfter} seconds!`,
       );
       return true;
     }
@@ -76,7 +77,7 @@ export function DefaultOctokit({ ...octokitOptions }): any {
     },
   };
 
-  return new RetryOctokit({ ...defaultOptions, ...octokitOptions });
+  return new RetryOctokit({ ...defaultOptions, ...RequestOptions });
 }
 
 export async function getRepos({
@@ -84,7 +85,7 @@ export async function getRepos({
   octokit,
 }: {
   patterns: string[];
-  octokit: any;
+  octokit: Octokit;
 }): Promise<Repository[]> {
   const repos: Repository[] = [];
 
@@ -106,7 +107,7 @@ export async function listAllMatchingRepos({
   pageSize = 30,
 }: {
   patterns: string[];
-  octokit: any;
+  octokit: Octokit;
   affiliation?: string;
   pageSize?: number;
 }): Promise<Repository[]> {
@@ -117,7 +118,7 @@ export async function listAllMatchingRepos({
   });
 
   core.info(
-    `Available repositories: ${JSON.stringify(repos.map((r) => r.full_name))}`
+    `Available repositories: ${JSON.stringify(repos.map((r) => r.full_name))}`,
   );
 
   return filterReposByPatterns(repos, patterns);
@@ -128,7 +129,7 @@ export async function listAllReposForAuthenticatedUser({
   affiliation,
   pageSize,
 }: {
-  octokit: any;
+  octokit: Octokit;
   affiliation: string;
   pageSize: number;
 }): Promise<Repository[]> {
@@ -151,19 +152,19 @@ export async function listAllReposForAuthenticatedUser({
 
 export function filterReposByPatterns(
   repos: Repository[],
-  patterns: string[]
+  patterns: string[],
 ): Repository[] {
   const regexPatterns = patterns.map((s) => new RegExp(s));
 
   return repos.filter(
-    (repo) => regexPatterns.filter((r) => r.test(repo.full_name)).length
+    (repo) => regexPatterns.filter((r) => r.test(repo.full_name)).length,
   );
 }
 
 export async function getPublicKey(
-  octokit: any,
+  octokit: Octokit,
   repo: Repository,
-  environment: string
+  environment: string,
 ): Promise<PublicKey> {
   let publicKey = publicKeyCache.get(repo);
 
@@ -191,13 +192,13 @@ export async function getPublicKey(
 }
 
 export async function setSecretForRepo(
-  octokit: any,
+  octokit: Octokit,
   name: string,
   secret: string,
   repo: Repository,
   environment: string,
-  dry_run: boolean
-): Promise<void> {
+  dry_run: boolean,
+): Promise<any> {
   const [repo_owner, repo_name] = repo.full_name.split("/");
 
   const publicKey = await getPublicKey(octokit, repo, environment);
@@ -227,13 +228,13 @@ export async function setSecretForRepo(
 }
 
 export async function deleteSecretForRepo(
-  octokit: any,
+  octokit: Octokit,
   name: string,
   secret: string,
   repo: Repository,
   environment: string,
-  dry_run: boolean
-): Promise<void> {
+  dry_run: boolean,
+): Promise<any> {
   core.info(`Remove ${name} from ${repo.full_name}`);
 
   try {
