@@ -1,29 +1,16 @@
-name: Set secrets action
+name: Secrets & variables sync action
 author: Jacob Hummer <jcbhmr@outlook.com> (https://jcbhmr.me/)
-description: ⚙️ Set secrets or variables on multiple repos at once!
+description: ⚙️ Set & delete secrets or variables on multiple repos at once!
 branding:
   icon: lock
   color: yellow
 inputs:
   token:
-    description: >
-      The GitHub PAT to use when setting secrets on other repos. You can't use
-      the default secrets.GITHUB_TOKEN for this since it only covers the current
-      repository. You'll need to create a PAT with access to the "secrets"
-      permission either for a single repo, multiple repos, or all repos. This is
-      required.
     required: true
   github-server-url:
-    description: >
-      The GitHub server URL to use when setting secrets on other repos. This
-      defaults to the GitHub server URL that the action is running on. Defaults
-      to the github.server_url context variable.
     required: true
     default: ${{ github.server_url }}
   dry-run:
-    description: >
-      Whether or not to actually set the secrets. Set this to true when testing
-      this action. Defaults to false.
     required: true
     default: false
   mode: {}
@@ -36,26 +23,45 @@ inputs:
   variables: {}
   organization: {}
   user: {}
-  app: {}
+  app:
+    required: true
+    default: actions
   environment: {}
+  visibility:
+    required: true
+    default: all
 runs:
   using: composite
   steps:
-    - run: '"${GITHUB_ACTION_PATH%/}/cliw"'
-      shell: bash
-      env:
-        INPUT_TOKEN: ${{ inputs.token }}
-        INPUT_GITHUB_SERVER_URL: ${{ inputs.github-server-url }}
-        INPUT_DRY_RUN: ${{ inputs.dry-run }}
-        INPUT_MODE: ${{ inputs.mode }}
-        INPUT_REPOSITORY: ${{ inputs.repository }}
-        INPUT_REPOSITORIES: ${{ inputs.repositories }}
-        INPUT_QUERY: ${{ inputs.query }}
-        INPUT_SECRET: ${{ inputs.secret }}
-        INPUT_SECRETS: ${{ inputs.secrets }}
-        INPUT_VARIABLE: ${{ inputs.variable }}
-        INPUT_VARIABLES: ${{ inputs.variables }}
-        INPUT_ORGANIZATION: ${{ inputs.organization }}
-        INPUT_USER: ${{ inputs.user }}
-        INPUT_APP: ${{ inputs.app }}
-        INPUT_ENVIRONMENT: ${{ inputs.environment }}
+    - if: inputs.mode == 'set-secrets'
+      uses: jcbhmr/set-secrets@main
+      with:
+        token: ${{ inputs.token }}
+        github-server-url: ${{ inputs.github-server-url }}
+        dry-run: ${{ inputs.dry-run }}
+        repository: ${{ inputs.repository }}
+        repositories: ${{ inputs.repositories }}
+        query: ${{ inputs.query }}
+        secret: ${{ inputs.secret }}
+        secrets: ${{ inputs.secrets }}
+        organization: ${{ inputs.organization }}
+        user: ${{ inputs.user }}
+        app: ${{ inputs.app }}
+        environment: ${{ inputs.environment }}
+        visibility: ${{ inputs.visibility }}
+    - if: inputs.mode == 'delete-secrets'
+      uses: jcbhmr/delete-secrets@main
+      with:
+        token: ${{ inputs.token }}
+        github-server-url: ${{ inputs.github-server-url }}
+        dry-run: ${{ inputs.dry-run }}
+        repository: ${{ inputs.repository }}
+        repositories: ${{ inputs.repositories }}
+        query: ${{ inputs.query }}
+        secret: ${{ inputs.secret }}
+        secrets: ${{ inputs.secrets }}
+        organization: ${{ inputs.organization }}
+        user: ${{ inputs.user }}
+        app: ${{ inputs.app }}
+        environment: ${{ inputs.environment }}
+    # TODO: variables!
