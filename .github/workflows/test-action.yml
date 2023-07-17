@@ -19,6 +19,7 @@ on:
       - README.md
       - .github/**
       - "!.github/workflows/test-action.yml"
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
