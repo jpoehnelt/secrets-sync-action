@@ -1,67 +1,67 @@
-# action.yml
-name: "Secrets Sync Action"
-author: Justin Poehnelt
+name: Secrets & variables sync action
+author: Jacob Hummer <jcbhmr@outlook.com> (https://jcbhmr.me/)
+description: ⚙️ Set & delete secrets or variables on multiple repos at once!
 branding:
-  icon: 'copy'  
-  color: 'red'
-description: "Copies secrets from the action's environment to many other repos."
+  icon: lock
+  color: yellow
 inputs:
-  github_token:
-    description: "Token to use to get repos and write secrets"
+  token:
     required: true
-  github_api_url:
-    description: |
-      Override default GitHub API URL. When not provided, the action will attempt
-      to use an environment variable provided by the GitHub Action runner environment
-      defaults.
-    required: false
-  repositories:
-    description: |
-      New line deliminated regex expressions to select repositories. Repositories
-      are limited to those in which the token user is an owner or collaborator.
-      Set `REPOSITORIES_LIST_REGEX` to `False` to use a hardcoded list of
-      repositories. Archived repositories will be ignored.
+  github-server-url:
     required: true
-  repositories_list_regex:
-    default: "true"
-    description: |
-      If this value is `true`(default), the action will find all repositories
-      available to the token user and filter based upon the regex provided. If
-      it is false, it is expected that `REPOSITORIES` will be an a new line
-      deliminated list in the form of org/name.
-    required: false
-  secrets:
-    description: |
-      New line deliminated regex expressions to select values from `process.env`. 
-      Use the action env to pass secrets from the repository in which this action 
-      runs with the `env` attribute of the step.
+    default: ${{ github.server_url }}
+  dry-run:
     required: true
-  dry_run:
-    description: |
-      Run everything except for secret create and update functionality.
-    required: false
-  retries:
-    description: |
-      The number of retries to attempt when making Github calls.
-    default: "3"
-    required: false
-  concurrency:
-    description: |
-      The number of allowed concurrent calls to the set secret endpoint. Lower this
-      number to avoid abuse limits.
-    default: "10"
-    required: false
-  delete:
-    description: |
-      When set to `true`, the action will find and delete the selected secrets from repositories. Defaults to `false`.
     default: false
-    required: false
-  environment:
-    default: ""
-    description: |
-      If this value is set, the action will set the secrets to the repositories 
-      environment with the name of this value.
-    required: false
+  mode: {}
+  repository: {}
+  repositories: {}
+  query: {}
+  secret: {}
+  secrets: {}
+  variable: {}
+  variables: {}
+  organization: {}
+  user: {}
+  app:
+    required: true
+    default: actions
+  environment: {}
+  visibility:
+    required: true
+    default: all
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: composite
+  steps:
+    - if: inputs.mode == 'set-secrets' || inputs.mode == 'set-secret'
+      uses: jcbhmr/set-secrets@main
+      with:
+        token: ${{ inputs.token }}
+        github-server-url: ${{ inputs.github-server-url }}
+        dry-run: ${{ inputs.dry-run }}
+        repository: ${{ inputs.repository }}
+        repositories: ${{ inputs.repositories }}
+        query: ${{ inputs.query }}
+        secret: ${{ inputs.secret }}
+        secrets: ${{ inputs.secrets }}
+        organization: ${{ inputs.organization }}
+        user: ${{ inputs.user }}
+        app: ${{ inputs.app }}
+        environment: ${{ inputs.environment }}
+        visibility: ${{ inputs.visibility }}
+    - if: inputs.mode == 'delete-secrets' || inputs.mode == 'delete-secret'
+      uses: jcbhmr/delete-secrets@main
+      with:
+        token: ${{ inputs.token }}
+        github-server-url: ${{ inputs.github-server-url }}
+        dry-run: ${{ inputs.dry-run }}
+        repository: ${{ inputs.repository }}
+        repositories: ${{ inputs.repositories }}
+        query: ${{ inputs.query }}
+        secret: ${{ inputs.secret }}
+        secrets: ${{ inputs.secrets }}
+        organization: ${{ inputs.organization }}
+        user: ${{ inputs.user }}
+        app: ${{ inputs.app }}
+        environment: ${{ inputs.environment }}
+    # TODO: variables!

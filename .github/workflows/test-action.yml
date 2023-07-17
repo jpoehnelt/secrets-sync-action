@@ -1,0 +1,107 @@
+# Copyright 2023 Jacob Hummer
+# SPDX-License-Identifier: Apache-2.0
+name: Test action
+on:
+  push:
+    branches: "master"
+    paths-ignore:
+      - .gitignore
+      - .gitattributes
+      - LICENSE
+      - README.md
+      - .github/**
+      - "!.github/workflows/test-action.yml"
+  pull_request:
+    paths-ignore:
+      - .gitignore
+      - .gitattributes
+      - LICENSE
+      - README.md
+      - .github/**
+      - "!.github/workflows/test-action.yml"
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+jobs:
+  test-action-set-secrets-repository-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          dry-run: true
+          mode: set-secrets
+          repository: github/docs
+          secrets: |
+            HELLO=world
+            MESSAGE=hello
+          environment: github-pages
+  test-action-set-variables-repositories:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          dry-run: true
+          mode: set-variables
+          repositories: |
+            github/.github
+            octocat/hello-world
+          variable: |
+            HELLO=world
+            MESSAGE=hello
+  test-action-delete-secrets-query-dependabot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          dry-run: true
+          mode: delete-secrets
+          app: dependabot
+          query: user:sindresorhus topic:nodejs
+          secret: |
+            HELLO
+            MESSAGE
+  test-action-delete-variables:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          dry-run: true
+          mode: delete-variables
+          query: org:nodejs node
+          variables: |
+            HELLO
+            MESSAGE
+  test-action-set-organization-secrets-selected:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          dry-run: true
+          mode: set-secrets
+          organization: github
+          secrets: |
+            HELLO=world
+            MESSAGE=hello
+          visibility: selected
+          repositories: |
+            github/docs
+            github/feedback
+  test-action-set-user-secret-codespaces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          dry-run: true
+          mode: set-secrets
+          user: github-actions
+          secrets: |
+            HELLO=world
+            MESSAGE=hello
+          app: codespaces
