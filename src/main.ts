@@ -62,7 +62,7 @@ export async function run(): Promise<void> {
     if (repos.length === 0) {
       const repoPatternString = config.REPOSITORIES.join(", ");
       core.setFailed(
-        `Repos: No matches with "${repoPatternString}". Check your token and regex.`
+        `Repos: No matches with "${repoPatternString}". Check your token and regex.`,
       );
       return;
     }
@@ -81,8 +81,8 @@ export async function run(): Promise<void> {
           ENVIRONMENT: config.ENVIRONMENT,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
 
     const limit = pLimit(config.CONCURRENCY);
@@ -101,17 +101,17 @@ export async function run(): Promise<void> {
               secrets[k],
               repo,
               config.ENVIRONMENT,
-              config.DRY_RUN
-            )
-          )
+              config.DRY_RUN,
+            ),
+          ),
         );
       }
     }
     await Promise.all(calls);
-  } catch (error: any) {
+  } catch (error: unknown) {
     /* istanbul ignore next */
-    core.error(error);
+    core.error(error as Error);
     /* istanbul ignore next */
-    core.setFailed(error.message);
+    core.setFailed((error as Error).message);
   }
 }

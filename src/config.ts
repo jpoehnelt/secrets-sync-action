@@ -43,13 +43,13 @@ export function getConfig(): Config {
     REPOSITORIES_LIST_REGEX: ["1", "true"].includes(
       core
         .getInput("REPOSITORIES_LIST_REGEX", { required: false })
-        .toLowerCase()
+        .toLowerCase(),
     ),
     DRY_RUN: ["1", "true"].includes(
-      core.getInput("DRY_RUN", { required: false }).toLowerCase()
+      core.getInput("DRY_RUN", { required: false }).toLowerCase(),
     ),
     RUN_DELETE: ["1", "true"].includes(
-      core.getInput("DELETE", { required: false }).toLowerCase()
+      core.getInput("DELETE", { required: false }).toLowerCase(),
     ),
     ENVIRONMENT: core.getInput("ENVIRONMENT", { required: false }),
   };
