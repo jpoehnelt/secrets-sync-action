@@ -6,7 +6,7 @@
 ![GitHub contributors](https://img.shields.io/github/contributors/jpoehnelt/secrets-sync-action?color=green)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-A Github Action that can sync secrets from one repository to many others. This action allows a maintainer to define and rotate secrets in a single repository and have them synced to all other repositories in the Github organization or beyond. Secrets do not need to be sensitive and could also be specific build settings that would apply to all repositories and become available to all actions. Regex is used to select the secrets and the repositories. Exclude is currently not supported and it is recommended to use a bot user if possible.
+A Github Action that can sync secrets from one repository to many others. This action allows a maintainer to define and rotate secrets in a single repository and have them synced to all other repositories in the Github organization or beyond. Secrets do not need to be sensitive and could also be specific build settings that would apply to all repositories and become available for all actions. Regex is used to select the secrets and the repositories. Exclude is currently not supported, and it is recommended to use a bot user if possible.
 
 ## Inputs
 
@@ -20,7 +20,7 @@ A Github Action that can sync secrets from one repository to many others. This a
 
 ### `github_api_url`
 
-Override default GitHub API URL. When not provided, the action will attempt to use an environment variable provided by the GitHub Action runner environment defaults.
+Override the default GitHub API URL. When not provided, the action will attempt to use an environment variable provided by the GitHub Action runner environment defaults.
 
 ### `repositories_list_regex`
 
@@ -40,7 +40,7 @@ The number of allowed concurrent calls to the set secret endpoint. Lower this nu
 
 ### `dry_run`
 
-Run everything except for secret create and update functionality.
+Run everything except secret create and update functionality.
 
 ### `delete`
 
