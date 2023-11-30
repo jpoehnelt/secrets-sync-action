@@ -58,6 +58,14 @@ export async function run(): Promise<void> {
       });
     }
 
+    const allowedTargets = ["dependabot", "actions"];
+    if (!allowedTargets.some((x) => x === config.TARGET)) {
+      core.setFailed(
+        `Target: Value not in supported targets: ${allowedTargets}`
+      );
+      return;
+    }
+
     /* istanbul ignore next */
     if (repos.length === 0) {
       const repoPatternString = config.REPOSITORIES.join(", ");
@@ -79,6 +87,7 @@ export async function run(): Promise<void> {
           FOUND_REPOS: repoNames,
           FOUND_SECRETS: Object.keys(secrets),
           ENVIRONMENT: config.ENVIRONMENT,
+          TARGET: config.TARGET,
         },
         null,
         2
@@ -101,7 +110,8 @@ export async function run(): Promise<void> {
               secrets[k],
               repo,
               config.ENVIRONMENT,
-              config.DRY_RUN
+              config.DRY_RUN,
+              config.TARGET
             )
           )
         );

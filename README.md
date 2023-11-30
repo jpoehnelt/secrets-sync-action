@@ -48,7 +48,11 @@ When set to `true`, the action will find and delete the selected secrets from re
 
 ### `environment`
 
-If this value is set to the name of a valid environment in the target repositories, the action will not set repository secrets but instead only set environment secrets for the specified environment. When not set, will set repository secrets only.
+If this value is set to the name of a valid environment in the target repositories, the action will not set repository secrets but instead only set environment secrets for the specified environment. When not set, will set repository secrets only. Only works if `target` is set to `actions` (default).
+
+### `target`
+
+Target where secrets should be stored: `actions` (default) or `dependabot`.
 
 ## Usage
 

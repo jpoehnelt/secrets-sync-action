@@ -36,6 +36,7 @@ describe("getConfig", () => {
   const CONCURRENCY = 50;
   const RUN_DELETE = false;
   const ENVIRONMENT = "production";
+  const TARGET = "actions";
 
   // Must implement because operands for delete must be optional in typescript >= 4.0
   interface Inputs {
@@ -49,6 +50,7 @@ describe("getConfig", () => {
     INPUT_CONCURRENCY: string;
     INPUT_RUN_DELETE: string;
     INPUT_ENVIRONMENT: string;
+    INPUT_TARGET: string;
   }
   const inputs: Inputs = {
     INPUT_GITHUB_API_URL: String(GITHUB_API_URL),
@@ -61,6 +63,7 @@ describe("getConfig", () => {
     INPUT_CONCURRENCY: String(CONCURRENCY),
     INPUT_RUN_DELETE: String(RUN_DELETE),
     INPUT_ENVIRONMENT: String(ENVIRONMENT),
+    INPUT_TARGET: String(TARGET),
   };
 
   beforeEach(() => {
@@ -89,6 +92,7 @@ describe("getConfig", () => {
       CONCURRENCY,
       RUN_DELETE,
       ENVIRONMENT,
+      TARGET,
     });
   });
 

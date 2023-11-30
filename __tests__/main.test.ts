@@ -48,6 +48,7 @@ test("run should succeed with a repo and secret", async () => {
     DRY_RUN: false,
     RETRIES: 3,
     CONCURRENCY: 1,
+    TARGET: "actions",
   });
   await run();
 
@@ -79,6 +80,7 @@ test("run should succeed with a repo and secret with repository_list_regex as fa
     REPOSITORIES_LIST_REGEX: false,
     DRY_RUN: false,
     CONCURRENCY: 1,
+    TARGET: "actions",
   });
   await run();
 
@@ -103,6 +105,7 @@ test("run should succeed with delete enabled, a repo and secret with repository_
     DRY_RUN: false,
     RUN_DELETE: true,
     CONCURRENCY: 1,
+    TARGET: "actions",
   });
   await run();
 
