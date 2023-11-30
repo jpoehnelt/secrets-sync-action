@@ -230,6 +230,8 @@ export async function setSecretForRepo(
         owner: repo_owner,
         repo: repo_name,
         secret_name: name,
+        key_id: publicKey.key_id,
+        encrypted_value,
       });
     }
   }
