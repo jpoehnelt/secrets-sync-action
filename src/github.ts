@@ -186,10 +186,10 @@ export async function getPublicKey(
       switch (target) {
         case "dependabot":
           publicKey = (
-              await octokit.dependabot.getRepoPublicKey({
-                owner,
-                repo: name,
-              })
+            await octokit.dependabot.getRepoPublicKey({
+              owner,
+              repo: name,
+            })
           ).data as PublicKey;
 
           publicKeyCache.set(repo, publicKey);
@@ -198,10 +198,10 @@ export async function getPublicKey(
         case "actions":
         default:
           publicKey = (
-              await octokit.actions.getRepoPublicKey({
-                owner,
-                repo: name,
-              })
+            await octokit.actions.getRepoPublicKey({
+              owner,
+              repo: name,
+            })
           ).data as PublicKey;
 
           publicKeyCache.set(repo, publicKey);
@@ -256,7 +256,7 @@ export async function setSecretForRepo(
           repo: repo_name,
           secret_name: name,
           key_id: publicKey.key_id,
-          encrypted_value
+          encrypted_value,
         });
     }
   }
