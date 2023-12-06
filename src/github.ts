@@ -278,16 +278,19 @@ export async function deleteSecretForRepo(
       const action = "DELETE";
       switch (target) {
         case "dependabot":
-          const request = `/repos/${repo.full_name}/dependabot/secrets/${name}`;
-          return octokit.request(`${action} ${request}`);
+          return octokit.request(
+            `${action} /repos/${repo.full_name}/dependabot/secrets/${name}`
+          );
         case "actions":
         default:
           if (environment) {
-            const request = `/repositories/${repo.id}/environments/${environment}/secrets/${name}`;
-            return octokit.request(`${action} ${request}`);
+            return octokit.request(
+              `${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`
+            );
           } else {
-            const request = `/repos/${repo.full_name}/actions/secrets/${name}`;
-            return octokit.request(`${action} ${request}`);
+            return octokit.request(
+              `${action} /repos/${repo.full_name}/actions/secrets/${name}`
+            );
           }
       }
     }
