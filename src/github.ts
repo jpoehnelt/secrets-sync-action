@@ -163,7 +163,8 @@ export function filterReposByPatterns(
 export async function getPublicKey(
   octokit: any,
   repo: Repository,
-  environment: string
+  environment: string,
+  target: string
 ): Promise<PublicKey> {
   let publicKey = publicKeyCache.get(repo);
 
@@ -175,16 +176,39 @@ export async function getPublicKey(
           environment_name: environment,
         })
       ).data as PublicKey;
+
+      publicKeyCache.set(repo, publicKey);
+
+      return publicKey;
     } else {
       const [owner, name] = repo.full_name.split("/");
-      publicKey = (
-        await octokit.actions.getRepoPublicKey({
-          owner,
-          repo: name,
-        })
-      ).data as PublicKey;
+
+      switch (target) {
+        case "dependabot":
+          publicKey = (
+              await octokit.dependabot.getRepoPublicKey({
+                owner,
+                repo: name,
+              })
+          ).data as PublicKey;
+
+          publicKeyCache.set(repo, publicKey);
+
+          return publicKey;
+        case "actions":
+        default:
+          publicKey = (
+              await octokit.actions.getRepoPublicKey({
+                owner,
+                repo: name,
+              })
+          ).data as PublicKey;
+
+          publicKeyCache.set(repo, publicKey);
+
+          return publicKey;
+      }
     }
-    publicKeyCache.set(repo, publicKey);
   }
 
   return publicKey;
@@ -201,38 +225,39 @@ export async function setSecretForRepo(
 ): Promise<void> {
   const [repo_owner, repo_name] = repo.full_name.split("/");
 
-  const publicKey = await getPublicKey(octokit, repo, environment);
+  const publicKey = await getPublicKey(octokit, repo, environment, target);
   const encrypted_value = encrypt(secret, publicKey.key);
 
   core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
 
   if (!dry_run) {
-    if (target === "actions") {
-      if (environment) {
-        return octokit.actions.createOrUpdateEnvironmentSecret({
-          repository_id: repo.id,
-          environment_name: environment,
-          secret_name: name,
-          key_id: publicKey.key_id,
-          encrypted_value,
-        });
-      } else {
-        return octokit.actions.createOrUpdateRepoSecret({
+    switch (target) {
+      case "actions":
+        if (environment) {
+          return octokit.actions.createOrUpdateEnvironmentSecret({
+            repository_id: repo.id,
+            environment_name: environment,
+            secret_name: name,
+            key_id: publicKey.key_id,
+            encrypted_value,
+          });
+        } else {
+          return octokit.actions.createOrUpdateRepoSecret({
+            owner: repo_owner,
+            repo: repo_name,
+            secret_name: name,
+            key_id: publicKey.key_id,
+            encrypted_value,
+          });
+        }
+      case "dependabot":
+        return octokit.dependabot.createOrUpdateRepoSecret({
           owner: repo_owner,
           repo: repo_name,
           secret_name: name,
           key_id: publicKey.key_id,
-          encrypted_value,
+          encrypted_value
         });
-      }
-    } else if (target === "dependabot") {
-      return octokit.dependabot.createOrUpdateRepoSecret({
-        owner: repo_owner,
-        repo: repo_name,
-        secret_name: name,
-        key_id: publicKey.key_id,
-        encrypted_value,
-      });
     }
   }
 }
@@ -251,17 +276,18 @@ export async function deleteSecretForRepo(
   try {
     if (!dry_run) {
       const action = "DELETE";
-      if (target === "actions") {
-        if (environment) {
-          const request = `/repositories/${repo.id}/environments/${environment}/secrets/${name}`;
+      switch (target) {
+        case "actions":
+          if (environment) {
+            const request = `/repositories/${repo.id}/environments/${environment}/secrets/${name}`;
+            return octokit.request(`${action} ${request}`);
+          } else {
+            const request = `/repos/${repo.full_name}/actions/secrets/${name}`;
+            return octokit.request(`${action} ${request}`);
+          }
+        case "dependabot":
+          const request = `/repos/${repo.full_name}/dependabot/secrets/${name}`;
           return octokit.request(`${action} ${request}`);
-        } else {
-          const request = `/repos/${repo.full_name}/actions/secrets/${name}`;
-          return octokit.request(`${action} ${request}`);
-        }
-      } else if (target === "dependabot") {
-        const request = `/repos/${repo.full_name}/dependabot/secrets/${name}`;
-        return octokit.request(`${action} ${request}`);
       }
     }
   } catch (HttpError) {
