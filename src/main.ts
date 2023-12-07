@@ -40,6 +40,14 @@ export async function run(): Promise<void> {
       return;
     }
 
+    const allowedTargets = ["dependabot", "actions"];
+    if (!allowedTargets.some((x) => x === config.TARGET)) {
+      core.setFailed(
+        `Target: Value not in supported targets: ${allowedTargets}`
+      );
+      return;
+    }
+
     const octokit = DefaultOctokit({
       auth: config.GITHUB_TOKEN,
       baseUrl: config.GITHUB_API_URL,
@@ -56,14 +64,6 @@ export async function run(): Promise<void> {
         patterns: config.REPOSITORIES,
         octokit,
       });
-    }
-
-    const allowedTargets = ["dependabot", "actions"];
-    if (!allowedTargets.some((x) => x === config.TARGET)) {
-      core.setFailed(
-        `Target: Value not in supported targets: ${allowedTargets}`
-      );
-      return;
     }
 
     /* istanbul ignore next */
