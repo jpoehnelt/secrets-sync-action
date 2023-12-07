@@ -133,18 +133,34 @@ describe("setSecretForRepo", () => {
 
   const repoEnvironment = "production";
 
-  let publicKeyMock: nock.Scope;
-  let setSecretMock: nock.Scope;
+  let actionsPublicKeyMock: nock.Scope;
+  let dependabotPublicKeyMock: nock.Scope;
+  let setActionsSecretMock: nock.Scope;
+  let setDependabotSecretMock: nock.Scope;
 
   beforeEach(() => {
     nock.cleanAll();
+
     publicKeyCache.clear();
-    publicKeyMock = nock("https://api.github.com")
+
+    actionsPublicKeyMock = nock("https://api.github.com")
       .get(`/repos/${repo.full_name}/actions/secrets/public-key`)
       .reply(200, publicKey);
 
-    setSecretMock = nock("https://api.github.com")
+    dependabotPublicKeyMock = nock("https://api.github.com")
+      .get(`/repos/${repo.full_name}/dependabot/secrets/public-key`)
+      .reply(200, publicKey);
+
+    setActionsSecretMock = nock("https://api.github.com")
       .put(`/repos/${repo.full_name}/actions/secrets/FOO`, (body) => {
+        expect(body.encrypted_value).toBeTruthy();
+        expect(body.key_id).toEqual(publicKey.key_id);
+        return body;
+      })
+      .reply(200);
+
+    setDependabotSecretMock = nock("https://api.github.com")
+      .put(`/repos/${repo.full_name}/dependabot/secrets/FOO`, (body) => {
         expect(body.encrypted_value).toBeTruthy();
         expect(body.key_id).toEqual(publicKey.key_id);
         return body;
@@ -152,20 +168,70 @@ describe("setSecretForRepo", () => {
       .reply(200);
   });
 
-  test("setSecretForRepo should retrieve public key", async () => {
-    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", true);
-    expect(publicKeyMock.isDone()).toBeTruthy();
+  test("setSecretForRepo with Actions target should retrieve public key for Actions", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      true,
+      "actions"
+    );
+    expect(actionsPublicKeyMock.isDone()).toBeTruthy();
+  });
+
+  test("setSecretForRepo with Dependabot target should retrieve public key for Dependabot", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      true,
+      "dependabot"
+    );
+    expect(dependabotPublicKeyMock.isDone()).toBeTruthy();
   });
 
   test("setSecretForRepo should not set secret with dry run", async () => {
-    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", true);
-    expect(publicKeyMock.isDone()).toBeTruthy();
-    expect(setSecretMock.isDone()).toBeFalsy();
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      true,
+      "actions"
+    );
+    expect(actionsPublicKeyMock.isDone()).toBeTruthy();
+    expect(setActionsSecretMock.isDone()).toBeFalsy();
   });
 
-  test("setSecretForRepo should call set secret endpoint", async () => {
-    await setSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", false);
-    expect(nock.isDone()).toBeTruthy();
+  test("setSecretForRepo with Actions target should call set secret endpoint for Actions", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      false,
+      "actions"
+    );
+    expect(setActionsSecretMock.isDone()).toBeTruthy();
+  });
+
+  test("setSecretForRepo with Dependabot target should call set secret endpoint for Dependabot", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      false,
+      "dependabot"
+    );
+    expect(setDependabotSecretMock.isDone()).toBeTruthy();
   });
 });
 
@@ -214,7 +280,8 @@ describe("setSecretForRepo with environment", () => {
       secrets.FOO,
       repo,
       repoEnvironment,
-      true
+      true,
+      "actions"
     );
     expect(environmentPublicKeyMock.isDone()).toBeTruthy();
   });
@@ -226,7 +293,22 @@ describe("setSecretForRepo with environment", () => {
       secrets.FOO,
       repo,
       repoEnvironment,
-      true
+      true,
+      "actions"
+    );
+    expect(environmentPublicKeyMock.isDone()).toBeTruthy();
+    expect(setEnvironmentSecretMock.isDone()).toBeFalsy();
+  });
+
+  test("setSecretForRepo should not set secret with Dependabot target", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      true,
+      "dependabot"
     );
     expect(environmentPublicKeyMock.isDone()).toBeTruthy();
     expect(setEnvironmentSecretMock.isDone()).toBeFalsy();
@@ -239,7 +321,8 @@ describe("setSecretForRepo with environment", () => {
       secrets.FOO,
       repo,
       repoEnvironment,
-      false
+      false,
+      "actions"
     );
     expect(nock.isDone()).toBeTruthy();
   });
@@ -251,23 +334,58 @@ describe("deleteSecretForRepo", () => {
   jest.setTimeout(30000);
 
   const secrets = { FOO: "BAR" };
-  let deleteSecretMock: nock.Scope;
+  let deleteActionsSecretMock: nock.Scope;
+  let deleteDependabotSecretMock: nock.Scope;
 
   beforeEach(() => {
     nock.cleanAll();
-    deleteSecretMock = nock("https://api.github.com")
+
+    deleteActionsSecretMock = nock("https://api.github.com")
       .delete(`/repos/${repo.full_name}/actions/secrets/FOO`)
+      .reply(200);
+
+    deleteDependabotSecretMock = nock("https://api.github.com")
+      .delete(`/repos/${repo.full_name}/dependabot/secrets/FOO`)
       .reply(200);
   });
 
   test("deleteSecretForRepo should not delete secret with dry run", async () => {
-    await deleteSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", true);
-    expect(deleteSecretMock.isDone()).toBeFalsy();
+    await deleteSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      true,
+      "actions"
+    );
+    expect(deleteActionsSecretMock.isDone()).toBeFalsy();
   });
 
-  test("deleteSecretForRepo should call set secret endpoint", async () => {
-    await deleteSecretForRepo(octokit, "FOO", secrets.FOO, repo, "", false);
-    expect(nock.isDone()).toBeTruthy();
+  test("deleteSecretForRepo with Actions target should call set secret endpoint for Actions", async () => {
+    await deleteSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      false,
+      "actions"
+    );
+    expect(deleteActionsSecretMock.isDone()).toBeTruthy();
+  });
+
+  test("deleteSecretForRepo with Dependabot target should call set secret endpoint for Dependabot", async () => {
+    await deleteSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      false,
+      "dependabot"
+    );
+    expect(deleteDependabotSecretMock.isDone()).toBeTruthy();
   });
 });
 
@@ -297,19 +415,34 @@ describe("deleteSecretForRepo with environment", () => {
       secrets.FOO,
       repo,
       repoEnvironment,
-      true
+      true,
+      "actions"
     );
     expect(deleteSecretMock.isDone()).toBeFalsy();
   });
 
-  test("deleteSecretForRepo should call set secret endpoint", async () => {
+  test("deleteSecretForRepo should not delete secret with Dependabot target", async () => {
     await deleteSecretForRepo(
       octokit,
       "FOO",
       secrets.FOO,
       repo,
       repoEnvironment,
-      false
+      true,
+      "dependabot"
+    );
+    expect(deleteSecretMock.isDone()).toBeFalsy();
+  });
+
+  test("deleteSecretForRepo with Actions target should call set secret endpoint for Actions", async () => {
+    await deleteSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      false,
+      "actions"
     );
     expect(nock.isDone()).toBeTruthy();
   });

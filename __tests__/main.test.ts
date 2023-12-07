@@ -48,6 +48,7 @@ test("run should succeed with a repo and secret", async () => {
     DRY_RUN: false,
     RETRIES: 3,
     CONCURRENCY: 1,
+    TARGET: "actions",
   });
   await run();
 
@@ -79,6 +80,7 @@ test("run should succeed with a repo and secret with repository_list_regex as fa
     REPOSITORIES_LIST_REGEX: false,
     DRY_RUN: false,
     CONCURRENCY: 1,
+    TARGET: "actions",
   });
   await run();
 
@@ -103,9 +105,37 @@ test("run should succeed with delete enabled, a repo and secret with repository_
     DRY_RUN: false,
     RUN_DELETE: true,
     CONCURRENCY: 1,
+    TARGET: "actions",
   });
   await run();
 
   expect(github.deleteSecretForRepo as jest.Mock).toBeCalledTimes(1);
   expect(process.exitCode).toBe(undefined);
+});
+
+test("run should fail if target is not supported", async () => {
+  (github.getRepos as jest.Mock) = jest
+    .fn()
+    .mockImplementation(async () => [fixture[0].response]);
+
+  (github.setSecretForRepo as jest.Mock) = jest
+    .fn()
+    .mockImplementation(async () => null);
+
+  (secrets.getSecrets as jest.Mock) = jest.fn().mockReturnValue({
+    BAZ: "bar",
+  });
+
+  (config.getConfig as jest.Mock) = jest.fn().mockReturnValue({
+    GITHUB_TOKEN: "token",
+    SECRETS: ["BAZ"],
+    REPOSITORIES: [fixture[0].response.full_name],
+    REPOSITORIES_LIST_REGEX: false,
+    DRY_RUN: false,
+    CONCURRENCY: 1,
+    TARGET: "invalid",
+  });
+  await run();
+
+  expect(process.exitCode).toBe(1);
 });
