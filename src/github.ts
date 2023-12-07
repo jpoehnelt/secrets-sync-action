@@ -232,7 +232,16 @@ export async function setSecretForRepo(
 
   if (!dry_run) {
     switch (target) {
+      case "dependabot":
+        return octokit.dependabot.createOrUpdateRepoSecret({
+          owner: repo_owner,
+          repo: repo_name,
+          secret_name: name,
+          key_id: publicKey.key_id,
+          encrypted_value,
+        });
       case "actions":
+      default:
         if (environment) {
           return octokit.actions.createOrUpdateEnvironmentSecret({
             repository_id: repo.id,
@@ -250,14 +259,6 @@ export async function setSecretForRepo(
             encrypted_value,
           });
         }
-      case "dependabot":
-        return octokit.dependabot.createOrUpdateRepoSecret({
-          owner: repo_owner,
-          repo: repo_name,
-          secret_name: name,
-          key_id: publicKey.key_id,
-          encrypted_value,
-        });
     }
   }
 }
