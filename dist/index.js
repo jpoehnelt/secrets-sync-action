@@ -266,7 +266,16 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
         core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
         if (!dry_run) {
             switch (target) {
+                case "dependabot":
+                    return octokit.dependabot.createOrUpdateRepoSecret({
+                        owner: repo_owner,
+                        repo: repo_name,
+                        secret_name: name,
+                        key_id: publicKey.key_id,
+                        encrypted_value,
+                    });
                 case "actions":
+                default:
                     if (environment) {
                         return octokit.actions.createOrUpdateEnvironmentSecret({
                             repository_id: repo.id,
@@ -285,14 +294,6 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
                             encrypted_value,
                         });
                     }
-                case "dependabot":
-                    return octokit.dependabot.createOrUpdateRepoSecret({
-                        owner: repo_owner,
-                        repo: repo_name,
-                        secret_name: name,
-                        key_id: publicKey.key_id,
-                        encrypted_value,
-                    });
             }
         }
     });
