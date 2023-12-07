@@ -397,6 +397,11 @@ function run() {
                 core.setFailed(`Secrets: no matches with "${config.SECRETS.join(", ")}"`);
                 return;
             }
+            const allowedTargets = ["dependabot", "actions"];
+            if (!allowedTargets.some((x) => x === config.TARGET)) {
+                core.setFailed(`Target: Value not in supported targets: ${allowedTargets}`);
+                return;
+            }
             const octokit = (0, github_1.DefaultOctokit)({
                 auth: config.GITHUB_TOKEN,
                 baseUrl: config.GITHUB_API_URL,
@@ -413,11 +418,6 @@ function run() {
                     patterns: config.REPOSITORIES,
                     octokit,
                 });
-            }
-            const allowedTargets = ["dependabot", "actions"];
-            if (!allowedTargets.some((x) => x === config.TARGET)) {
-                core.setFailed(`Target: Value not in supported targets: ${allowedTargets}`);
-                return;
             }
             /* istanbul ignore next */
             if (repos.length === 0) {
