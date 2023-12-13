@@ -267,17 +267,18 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
         if (!dry_run) {
             switch (target) {
                 case "dependabot":
-                    return octokit.dependabot.createOrUpdateRepoSecret({
+                    octokit.dependabot.createOrUpdateRepoSecret({
                         owner: repo_owner,
                         repo: repo_name,
                         secret_name: name,
                         key_id: publicKey.key_id,
                         encrypted_value,
                     });
+                    break;
                 case "actions":
                 default:
                     if (environment) {
-                        return octokit.actions.createOrUpdateEnvironmentSecret({
+                        octokit.actions.createOrUpdateEnvironmentSecret({
                             repository_id: repo.id,
                             environment_name: environment,
                             secret_name: name,
@@ -286,7 +287,7 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
                         });
                     }
                     else {
-                        return octokit.actions.createOrUpdateRepoSecret({
+                        octokit.actions.createOrUpdateRepoSecret({
                             owner: repo_owner,
                             repo: repo_name,
                             secret_name: name,
@@ -294,7 +295,16 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
                             encrypted_value,
                         });
                     }
+                    break;
             }
+            return {
+                repo: repo.full_name,
+                target: target,
+                action: "set",
+                environment: environment,
+                secret_name: name,
+                secret_hash: "secret",
+            };
         }
     });
 }
@@ -307,16 +317,26 @@ function deleteSecretForRepo(octokit, name, secret, repo, environment, dry_run, 
                 const action = "DELETE";
                 switch (target) {
                     case "dependabot":
-                        return octokit.request(`${action} /repos/${repo.full_name}/dependabot/secrets/${name}`);
+                        octokit.request(`${action} /repos/${repo.full_name}/dependabot/secrets/${name}`);
+                        break;
                     case "actions":
                     default:
                         if (environment) {
-                            return octokit.request(`${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`);
+                            octokit.request(`${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`);
                         }
                         else {
-                            return octokit.request(`${action} /repos/${repo.full_name}/actions/secrets/${name}`);
+                            octokit.request(`${action} /repos/${repo.full_name}/actions/secrets/${name}`);
                         }
+                        break;
                 }
+                return {
+                    repo: repo.full_name,
+                    target: target,
+                    action: "set",
+                    environment: environment,
+                    secret_name: name,
+                    secret_hash: "secret",
+                };
             }
         }
         catch (HttpError) {
@@ -446,7 +466,7 @@ function run() {
                     calls.push(limit(() => action(octokit, k, secrets[k], repo, config.ENVIRONMENT, config.DRY_RUN, config.TARGET)));
                 }
             }
-            yield Promise.all(calls);
+            yield Promise.all(calls).then((audit_log) => core.setOutput("audit_log", audit_log));
         }
         catch (error) {
             /* istanbul ignore next */
