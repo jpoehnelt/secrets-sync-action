@@ -31,7 +31,7 @@ jobs:
           ^FOO$
           ^GITHUB_.*
         REPOSITORIES: |
-          ^jpoehnelt/nodelete$
+          ^philips-forks/secrets-sync-action$
         DRY_RUN: true
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_NO_SCOPES }}
       env:
