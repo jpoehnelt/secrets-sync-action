@@ -119,7 +119,7 @@ export async function run(): Promise<void> {
       }
     }
     await Promise.all(calls).then((audit_log) =>
-        core.setOutput("audit_log", audit_log)
+      core.setOutput("audit_log", audit_log)
     );
   } catch (error: any) {
     /* istanbul ignore next */
