@@ -96,7 +96,7 @@ export async function run(): Promise<void> {
     );
 
     const limit = pLimit(config.CONCURRENCY);
-    const calls: Promise<AuditLog | undefined>[] = [];
+    const calls: Promise<AuditLog>[] = [];
     for (const repo of repos) {
       for (const k of Object.keys(secrets)) {
         const action = config.RUN_DELETE
@@ -119,7 +119,7 @@ export async function run(): Promise<void> {
       }
     }
     await Promise.all(calls).then((audit_log) =>
-      core.setOutput("audit_log", audit_log)
+        core.setOutput("audit_log", audit_log)
     );
   } catch (error: any) {
     /* istanbul ignore next */
