@@ -480,7 +480,7 @@ function run() {
                     calls.push(limit(() => action(octokit, k, secrets[k], repo, config.ENVIRONMENT, config.DRY_RUN, config.TARGET)));
                 }
             }
-            yield Promise.all(calls).then((audit_log) => core.setOutput("audit_log", audit_log));
+            yield Promise.all(calls).then((audit_log) => core.exportVariable("audit_log", audit_log));
         }
         catch (error) {
             /* istanbul ignore next */
