@@ -274,9 +274,9 @@ export async function setSecretForRepo(
 
     return {
       repo: repo.full_name,
-      target: target,
+      target,
       action: "set",
-      environment: environment,
+      environment,
       secret_name: name,
       secret_hash: "secret",
     };
@@ -320,9 +320,9 @@ export async function deleteSecretForRepo(
 
       return {
         repo: repo.full_name,
-        target: target,
+        target,
         action: "set",
-        environment: environment,
+        environment,
         secret_name: name,
         secret_hash: "secret",
       };
