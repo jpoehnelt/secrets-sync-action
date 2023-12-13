@@ -33,7 +33,7 @@ jobs:
         REPOSITORIES: |
           ^philips-forks/secrets-sync-action$
         DRY_RUN: true
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_NO_SCOPES }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN_NO_SCOPES }}
       env:
         FOO: ${{github.run_id}}
         FOOBAR: BAZ
