@@ -24,19 +24,6 @@ jobs:
     - uses: actions/checkout@v2
       with:
         ref: master
-    - name: Test Action
-      uses: ./
-      with: 
-        SECRETS: |
-          ^FOO$
-          ^GITHUB_.*
-        REPOSITORIES: |
-          ^philips-forks/secrets-sync-action$
-        DRY_RUN: true
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN_NO_SCOPES }}
-      env:
-        FOO: ${{github.run_id}}
-        FOOBAR: BAZ
     - name: Checkout
       uses: actions/checkout@v2
       with:
