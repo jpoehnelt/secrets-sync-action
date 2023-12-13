@@ -136,9 +136,6 @@ test("run should fail if target is not supported", async () => {
     TARGET: "invalid",
   });
 
-  try {
-    await run();
-  } catch (Error: any) {
-    expect(process.exitCode).toBe(1);
-  }
+  await run();
+  expect(process.exitCode).toBe(1);
 });
