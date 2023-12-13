@@ -131,12 +131,24 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.deleteSecretForRepo = exports.setSecretForRepo = exports.getPublicKey = exports.filterReposByPatterns = exports.listAllReposForAuthenticatedUser = exports.listAllMatchingRepos = exports.getRepos = exports.DefaultOctokit = exports.publicKeyCache = void 0;
+exports.deleteSecretForRepo = exports.setSecretForRepo = exports.getPublicKey = exports.filterReposByPatterns = exports.listAllReposForAuthenticatedUser = exports.listAllMatchingRepos = exports.getRepos = exports.DefaultOctokit = exports.publicKeyCache = exports.AuditLog = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const rest_1 = __nccwpck_require__(5375);
 const utils_1 = __nccwpck_require__(918);
 const config_1 = __nccwpck_require__(88);
 const plugin_retry_1 = __nccwpck_require__(6298);
+class AuditLog {
+    constructor(repo, environment, target, action, dry_run, secret_name, secret_hash) {
+        this.repo = repo;
+        this.environment = environment;
+        this.target = target;
+        this.action = action;
+        this.dry_run = dry_run;
+        this.secret_name = secret_name;
+        this.secret_hash = secret_hash;
+    }
+}
+exports.AuditLog = AuditLog;
 exports.publicKeyCache = new Map();
 const RetryOctokit = rest_1.Octokit.plugin(plugin_retry_1.retry);
 function DefaultOctokit(_a) {
@@ -267,7 +279,7 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
         if (!dry_run) {
             switch (target) {
                 case "dependabot":
-                    octokit.dependabot.createOrUpdateRepoSecret({
+                    yield octokit.dependabot.createOrUpdateRepoSecret({
                         owner: repo_owner,
                         repo: repo_name,
                         secret_name: name,
@@ -278,7 +290,7 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
                 case "actions":
                 default:
                     if (environment) {
-                        octokit.actions.createOrUpdateEnvironmentSecret({
+                        yield octokit.actions.createOrUpdateEnvironmentSecret({
                             repository_id: repo.id,
                             environment_name: environment,
                             secret_name: name,
@@ -287,7 +299,7 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
                         });
                     }
                     else {
-                        octokit.actions.createOrUpdateRepoSecret({
+                        yield octokit.actions.createOrUpdateRepoSecret({
                             owner: repo_owner,
                             repo: repo_name,
                             secret_name: name,
@@ -297,15 +309,16 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
                     }
                     break;
             }
-            return {
-                repo: repo.full_name,
-                target: target,
-                action: "set",
-                environment: environment,
-                secret_name: name,
-                secret_hash: "secret",
-            };
         }
+        return {
+            repo: repo.full_name,
+            target,
+            action: "set",
+            dry_run,
+            environment,
+            secret_name: name,
+            secret_hash: "secret",
+        };
     });
 }
 exports.setSecretForRepo = setSecretForRepo;
@@ -317,31 +330,32 @@ function deleteSecretForRepo(octokit, name, secret, repo, environment, dry_run, 
                 const action = "DELETE";
                 switch (target) {
                     case "dependabot":
-                        octokit.request(`${action} /repos/${repo.full_name}/dependabot/secrets/${name}`);
+                        yield octokit.request(`${action} /repos/${repo.full_name}/dependabot/secrets/${name}`);
                         break;
                     case "actions":
                     default:
                         if (environment) {
-                            octokit.request(`${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`);
+                            yield octokit.request(`${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`);
                         }
                         else {
-                            octokit.request(`${action} /repos/${repo.full_name}/actions/secrets/${name}`);
+                            yield octokit.request(`${action} /repos/${repo.full_name}/actions/secrets/${name}`);
                         }
                         break;
                 }
-                return {
-                    repo: repo.full_name,
-                    target: target,
-                    action: "set",
-                    environment: environment,
-                    secret_name: name,
-                    secret_hash: "secret",
-                };
             }
         }
         catch (HttpError) {
             //If secret is not found in target repo, silently continue
         }
+        return {
+            repo: repo.full_name,
+            target,
+            action: "delete",
+            dry_run,
+            environment,
+            secret_name: name,
+            secret_hash: "secret",
+        };
     });
 }
 exports.deleteSecretForRepo = deleteSecretForRepo;
