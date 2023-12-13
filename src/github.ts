@@ -32,6 +32,15 @@ export interface PublicKey {
   key_id: string;
 }
 
+export interface AuditLog {
+  repo: string;
+  environment?: string;
+  target: string;
+  action: string;
+  secret_name?: string;
+  secret_hash?: string;
+}
+
 export const publicKeyCache = new Map<Repository, PublicKey>();
 
 const RetryOctokit = Octokit.plugin(retry);
@@ -222,7 +231,7 @@ export async function setSecretForRepo(
   environment: string,
   dry_run: boolean,
   target: string
-): Promise<void> {
+): Promise<AuditLog | undefined> {
   const [repo_owner, repo_name] = repo.full_name.split("/");
 
   const publicKey = await getPublicKey(octokit, repo, environment, target);
@@ -233,17 +242,18 @@ export async function setSecretForRepo(
   if (!dry_run) {
     switch (target) {
       case "dependabot":
-        return octokit.dependabot.createOrUpdateRepoSecret({
+        octokit.dependabot.createOrUpdateRepoSecret({
           owner: repo_owner,
           repo: repo_name,
           secret_name: name,
           key_id: publicKey.key_id,
           encrypted_value,
         });
+        break;
       case "actions":
       default:
         if (environment) {
-          return octokit.actions.createOrUpdateEnvironmentSecret({
+          octokit.actions.createOrUpdateEnvironmentSecret({
             repository_id: repo.id,
             environment_name: environment,
             secret_name: name,
@@ -251,7 +261,7 @@ export async function setSecretForRepo(
             encrypted_value,
           });
         } else {
-          return octokit.actions.createOrUpdateRepoSecret({
+          octokit.actions.createOrUpdateRepoSecret({
             owner: repo_owner,
             repo: repo_name,
             secret_name: name,
@@ -259,7 +269,17 @@ export async function setSecretForRepo(
             encrypted_value,
           });
         }
+        break;
     }
+
+    return {
+      repo: repo.full_name,
+      target: target,
+      action: "set",
+      environment: environment,
+      secret_name: name,
+      secret_hash: "secret",
+    };
   }
 }
 
@@ -271,7 +291,7 @@ export async function deleteSecretForRepo(
   environment: string,
   dry_run: boolean,
   target: string
-): Promise<void> {
+): Promise<AuditLog | undefined> {
   core.info(`Remove ${name} from ${repo.full_name}`);
 
   try {
@@ -279,21 +299,33 @@ export async function deleteSecretForRepo(
       const action = "DELETE";
       switch (target) {
         case "dependabot":
-          return octokit.request(
+          octokit.request(
             `${action} /repos/${repo.full_name}/dependabot/secrets/${name}`
           );
+
+          break;
         case "actions":
         default:
           if (environment) {
-            return octokit.request(
+            octokit.request(
               `${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`
             );
           } else {
-            return octokit.request(
+            octokit.request(
               `${action} /repos/${repo.full_name}/actions/secrets/${name}`
             );
           }
+          break;
       }
+
+      return {
+        repo: repo.full_name,
+        target: target,
+        action: "set",
+        environment: environment,
+        secret_name: name,
+        secret_hash: "secret",
+      };
     }
   } catch (HttpError) {
     //If secret is not found in target repo, silently continue
