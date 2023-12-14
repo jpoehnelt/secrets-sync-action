@@ -254,8 +254,8 @@ export async function setSecretForRepo(
   const [repo_owner, repo_name] = repo.full_name.split("/");
 
   const publicKey = await getPublicKey(octokit, repo, environment, target);
-  const encrypted_value = await encrypt(secret, publicKey.key);
-  const hashed_value = await hash(secret);
+  const encrypted_value = encrypt(secret, publicKey.key);
+  const hashed_value = hash(secret);
 
   core.info(`Set \`${name} = ***\` (${target}) on ${repo.full_name}`);
 

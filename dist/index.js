@@ -275,7 +275,8 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
         const [repo_owner, repo_name] = repo.full_name.split("/");
         const publicKey = yield getPublicKey(octokit, repo, environment, target);
         const encrypted_value = (0, utils_1.encrypt)(secret, publicKey.key);
-        core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
+        const hashed_value = (0, utils_1.hash)(secret);
+        core.info(`Set \`${name} = ***\` (${target}) on ${repo.full_name}`);
         if (!dry_run) {
             switch (target) {
                 case "dependabot":
@@ -317,14 +318,14 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
             dry_run,
             environment,
             secret_name: name,
-            secret_hash: "secret",
+            secret_hash: hashed_value,
         };
     });
 }
 exports.setSecretForRepo = setSecretForRepo;
 function deleteSecretForRepo(octokit, name, secret, repo, environment, dry_run, target) {
     return __awaiter(this, void 0, void 0, function* () {
-        core.info(`Remove ${name} from ${repo.full_name}`);
+        core.info(`Remove ${name} (${target}) from ${repo.full_name}`);
         try {
             if (!dry_run) {
                 const action = "DELETE";
@@ -354,7 +355,6 @@ function deleteSecretForRepo(octokit, name, secret, repo, environment, dry_run, 
             dry_run,
             environment,
             secret_name: name,
-            secret_hash: "secret",
         };
     });
 }
@@ -604,10 +604,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.encrypt = void 0;
+exports.hash = exports.encrypt = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 // @ts-ignore-next-line
 const tweetsodium_1 = __nccwpck_require__(7637);
+const crypto_1 = __nccwpck_require__(6113);
 function encrypt(value, key) {
     // Convert the message and key to Uint8Array's (Buffer implements that interface)
     const messageBytes = Buffer.from(value, "utf8");
@@ -621,6 +622,10 @@ function encrypt(value, key) {
     return encrypted;
 }
 exports.encrypt = encrypt;
+function hash(value) {
+    return (0, crypto_1.createHash)("sha256").update(value).digest("hex");
+}
+exports.hash = hash;
 
 
 /***/ }),
