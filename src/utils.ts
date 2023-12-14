@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-import * as core from "@actions/core";
+import sodium from "libsodium-wrappers";
+import { createHash } from "crypto";
 
-// @ts-ignore-next-line
-import { seal } from "tweetsodium";
+export async function encrypt(value: string, key: string): Promise<string> {
+  // https://docs.github.com/en/rest/guides/encrypting-secrets-for-the-rest-api?apiVersion=2022-11-28#example-encrypting-a-secret-using-nodejs
 
-export function encrypt(value: string, key: string): string {
-  // Convert the message and key to Uint8Array's (Buffer implements that interface)
-  const messageBytes = Buffer.from(value, "utf8");
-  const keyBytes = Buffer.from(key, "base64");
+  // Ensure libsodium is ready before performing operations
+  await sodium.ready;
 
-  // Encrypt using LibSodium
-  const encryptedBytes = seal(messageBytes, keyBytes);
+  // Convert the secret and key to a Uint8Array.
+  const binkey = sodium.from_base64(key, sodium.base64_variants.ORIGINAL);
+  const binsec = sodium.from_string(value);
 
-  // Base64 the encrypted secret
-  const encrypted = Buffer.from(encryptedBytes).toString("base64");
+  // Encrypt the secret using libsodium
+  const encBytes = sodium.crypto_box_seal(binsec, binkey);
 
-  // tell Github to mask this from logs
-  core.setSecret(encrypted);
+  // Convert the encrypted Uint8Array to Base64
+  return sodium.to_base64(encBytes, sodium.base64_variants.ORIGINAL);
+}
 
-  return encrypted;
+export async function hash(value: string): Promise<string> {
+  return createHash("sha256").update(value).digest("hex");
 }

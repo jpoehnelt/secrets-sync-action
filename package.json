@@ -29,8 +29,8 @@
     "@octokit/plugin-retry": "^3.0.1",
     "@octokit/plugin-throttling": "^3.2.0",
     "@octokit/rest": "^18.12.0",
-    "p-limit": "^2.3.0",
-    "tweetsodium": "0.0.4"
+    "libsodium-wrappers": "^0.7.13",
+    "p-limit": "^2.3.0"
   },
   "devDependencies": {
     "@octokit/fixtures": "^21.0.2",
@@ -40,6 +40,7 @@
     "@semantic-release/github": "^9.0.3",
     "@semantic-release/release-notes-generator": "^11.0.4",
     "@types/jest": "^24.0.23",
+    "@types/libsodium-wrappers": "^0.7.13",
     "@types/node": "^12.12.30",
     "@types/tmp": "^0.1.0",
     "@typescript-eslint/parser": "^2.24.0",

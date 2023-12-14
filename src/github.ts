@@ -17,7 +17,7 @@
 import * as core from "@actions/core";
 
 import { Octokit } from "@octokit/rest";
-import { encrypt } from "./utils";
+import { encrypt, hash } from "./utils";
 import { getConfig } from "./config";
 import { retry } from "@octokit/plugin-retry";
 
@@ -38,7 +38,7 @@ export class AuditLog {
   target: string;
   action: string;
   dry_run: boolean;
-  secret_name?: string;
+  secret_name: string;
   secret_hash?: string;
 
   constructor(
@@ -254,9 +254,10 @@ export async function setSecretForRepo(
   const [repo_owner, repo_name] = repo.full_name.split("/");
 
   const publicKey = await getPublicKey(octokit, repo, environment, target);
-  const encrypted_value = encrypt(secret, publicKey.key);
+  const encrypted_value = await encrypt(secret, publicKey.key);
+  const hashed_value = await hash(secret);
 
-  core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
+  core.info(`Set \`${name} = ***\` (${target}) on ${repo.full_name}`);
 
   if (!dry_run) {
     switch (target) {
@@ -299,7 +300,7 @@ export async function setSecretForRepo(
     dry_run,
     environment,
     secret_name: name,
-    secret_hash: "secret",
+    secret_hash: hashed_value,
   };
 }
 
@@ -312,7 +313,7 @@ export async function deleteSecretForRepo(
   dry_run: boolean,
   target: string
 ): Promise<AuditLog> {
-  core.info(`Remove ${name} from ${repo.full_name}`);
+  core.info(`Remove ${name} (${target}) from ${repo.full_name}`);
 
   try {
     if (!dry_run) {
@@ -349,6 +350,5 @@ export async function deleteSecretForRepo(
     dry_run,
     environment,
     secret_name: name,
-    secret_hash: "secret",
   };
 }
