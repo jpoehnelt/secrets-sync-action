@@ -22,7 +22,7 @@ import * as secrets from "../src/secrets";
 import fixture from "@octokit/fixtures/scenarios/api.github.com/get-repository/normalized-fixture.json";
 import nock from "nock";
 import { run } from "../src/main";
-import {setFailed} from "@actions/core";
+import { setFailed } from "@actions/core";
 
 nock.disableNetConnect();
 
@@ -123,9 +123,9 @@ test("run should fail if target is not supported", async () => {
     .fn()
     .mockImplementation(async () => null);
 
-  jest.mock('@actions/core', () => ({
+  jest.mock("@actions/core", () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ...(jest.requireActual('@actions/core') as any),
+    ...(jest.requireActual("@actions/core") as any),
     setFailed: jest.fn(),
   }));
 
