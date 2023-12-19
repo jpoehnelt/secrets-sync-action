@@ -54,6 +54,12 @@ If this value is set to the name of a valid environment in the target repositori
 
 Target where secrets should be stored: `actions` (default) or `dependabot`.
 
+## Outputs
+
+### `audit_log`
+
+Audit log (JSON structure) describing which secrets have been updated in which repository.
+
 ## Usage
 
 ```yaml
