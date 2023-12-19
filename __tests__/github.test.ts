@@ -260,11 +260,11 @@ describe("setSecretForRepo", () => {
     );
     expect(auditLog.action === "set");
     expect(auditLog.repo === repo.full_name);
-    expect(auditLog.dry_run === dry_run);
-    expect(auditLog.environment === environment);
     expect(auditLog.target === target);
     expect(auditLog.secret_name == secret_name);
     expect(auditLog.secret_hash != null);
+    expect(auditLog.environment === environment);
+    expect(auditLog.dry_run === dry_run);
   });
 });
 
@@ -383,11 +383,11 @@ describe("setSecretForRepo with environment", () => {
     );
     expect(auditLog.action === "set");
     expect(auditLog.repo === repo.full_name);
-    expect(auditLog.dry_run === dry_run);
-    expect(auditLog.environment === repoEnvironment);
     expect(auditLog.target === target);
     expect(auditLog.secret_name == secret_name);
     expect(auditLog.secret_hash != null);
+    expect(auditLog.environment === repoEnvironment);
+    expect(auditLog.dry_run === dry_run);
   });
 });
 
@@ -533,10 +533,10 @@ describe("deleteSecretForRepo with environment", () => {
     );
     expect(auditLog.action === "delete");
     expect(auditLog.repo === repo.full_name);
-    expect(auditLog.dry_run === dry_run);
-    expect(auditLog.environment === repoEnvironment);
     expect(auditLog.target === target);
     expect(auditLog.secret_name == secret_name);
     expect(auditLog.secret_hash != null);
+    expect(auditLog.environment === repoEnvironment);
+    expect(auditLog.dry_run === dry_run);
   });
 });

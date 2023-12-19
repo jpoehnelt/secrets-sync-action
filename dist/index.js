@@ -141,14 +141,14 @@ const utils_1 = __nccwpck_require__(918);
 const config_1 = __nccwpck_require__(88);
 const plugin_retry_1 = __nccwpck_require__(6298);
 class AuditLog {
-    constructor(repo, environment, target, action, dry_run, secret_name, secret_hash) {
+    constructor(repo, target, action, secret_name, secret_hash, environment, dry_run) {
         this.repo = repo;
-        this.environment = environment;
         this.target = target;
         this.action = action;
-        this.dry_run = dry_run;
         this.secret_name = secret_name;
         this.secret_hash = secret_hash;
+        this.environment = environment;
+        this.dry_run = dry_run;
     }
 }
 exports.AuditLog = AuditLog;

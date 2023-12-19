@@ -34,29 +34,29 @@ export interface PublicKey {
 
 export class AuditLog {
   repo: string;
-  environment?: string;
   target: string;
   action: string;
-  dry_run: boolean;
   secret_name: string;
   secret_hash?: string;
+  environment?: string;
+  dry_run: boolean;
 
   constructor(
     repo: string,
-    environment: string,
     target: string,
     action: string,
-    dry_run: boolean,
     secret_name: string,
-    secret_hash: string
+    secret_hash: string,
+    environment: string,
+    dry_run: boolean
   ) {
     this.repo = repo;
-    this.environment = environment;
     this.target = target;
     this.action = action;
-    this.dry_run = dry_run;
     this.secret_name = secret_name;
     this.secret_hash = secret_hash;
+    this.environment = environment;
+    this.dry_run = dry_run;
   }
 }
 
