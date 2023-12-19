@@ -142,7 +142,7 @@ test("run should fail if target is not supported", async () => {
     CONCURRENCY: 1,
     TARGET: "invalid",
   });
-
   await run();
+
   expect(process.exitCode).toBe(1);
 });

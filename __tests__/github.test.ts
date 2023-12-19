@@ -233,6 +233,29 @@ describe("setSecretForRepo", () => {
     );
     expect(setDependabotSecretMock.isDone()).toBeTruthy();
   });
+
+  test("setSecretForRepo should return AuditLog", async () => {
+    const secret_name = "FOO";
+    const dry_run = false;
+    const target = "actions";
+
+    const auditLog = await setSecretForRepo(
+      octokit,
+      secret_name,
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      dry_run,
+      target
+    );
+    expect(auditLog.action === "set");
+    expect(auditLog.repo === repo.full_name);
+    expect(auditLog.dry_run === dry_run);
+    expect(auditLog.environment === repoEnvironment);
+    expect(auditLog.target === target);
+    expect(auditLog.secret_name == secret_name);
+    expect(auditLog.secret_hash != null);
+  });
 });
 
 describe("setSecretForRepo with environment", () => {
@@ -325,6 +348,29 @@ describe("setSecretForRepo with environment", () => {
       "actions"
     );
     expect(nock.isDone()).toBeTruthy();
+  });
+
+  test("setSecretForRepo should return AuditLog", async () => {
+    const secret_name = "FOO";
+    const dry_run = false;
+    const target = "actions";
+
+    const auditLog = await setSecretForRepo(
+      octokit,
+      secret_name,
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      dry_run,
+      target
+    );
+    expect(auditLog.action === "set");
+    expect(auditLog.repo === repo.full_name);
+    expect(auditLog.dry_run === dry_run);
+    expect(auditLog.environment === repoEnvironment);
+    expect(auditLog.target === target);
+    expect(auditLog.secret_name == secret_name);
+    expect(auditLog.secret_hash != null);
   });
 });
 
@@ -445,5 +491,28 @@ describe("deleteSecretForRepo with environment", () => {
       "actions"
     );
     expect(nock.isDone()).toBeTruthy();
+  });
+
+  test("deleteSecretForRepo should return AuditLog", async () => {
+    const secret_name = "FOO";
+    const dry_run = false;
+    const target = "actions";
+
+    const auditLog = await setSecretForRepo(
+      octokit,
+      secret_name,
+      secrets.FOO,
+      repo,
+      repoEnvironment,
+      dry_run,
+      target
+    );
+    expect(auditLog.action === "delete");
+    expect(auditLog.repo === repo.full_name);
+    expect(auditLog.dry_run === dry_run);
+    expect(auditLog.environment === repoEnvironment);
+    expect(auditLog.target === target);
+    expect(auditLog.secret_name == secret_name);
+    expect(auditLog.secret_hash != null);
   });
 });
