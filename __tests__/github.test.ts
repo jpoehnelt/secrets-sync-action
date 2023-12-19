@@ -15,6 +15,7 @@
  */
 
 import * as config from "../src/config";
+import * as utils from "../src/utils";
 
 import {
   DefaultOctokit,
@@ -166,6 +167,8 @@ describe("setSecretForRepo", () => {
         return body;
       })
       .reply(200);
+
+    (utils.hash as jest.Mock) = jest.fn().mockImplementation(() => "hash");
   });
 
   test("setSecretForRepo with Actions target should retrieve public key for Actions", async () => {
@@ -176,7 +179,8 @@ describe("setSecretForRepo", () => {
       repo,
       "",
       true,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(actionsPublicKeyMock.isDone()).toBeTruthy();
   });
@@ -189,7 +193,8 @@ describe("setSecretForRepo", () => {
       repo,
       "",
       true,
-      "dependabot"
+      "dependabot",
+      "salt"
     );
     expect(dependabotPublicKeyMock.isDone()).toBeTruthy();
   });
@@ -202,7 +207,8 @@ describe("setSecretForRepo", () => {
       repo,
       "",
       true,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(actionsPublicKeyMock.isDone()).toBeTruthy();
     expect(setActionsSecretMock.isDone()).toBeFalsy();
@@ -216,7 +222,8 @@ describe("setSecretForRepo", () => {
       repo,
       "",
       false,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(setActionsSecretMock.isDone()).toBeTruthy();
   });
@@ -229,13 +236,15 @@ describe("setSecretForRepo", () => {
       repo,
       "",
       false,
-      "dependabot"
+      "dependabot",
+      "salt"
     );
     expect(setDependabotSecretMock.isDone()).toBeTruthy();
   });
 
   test("setSecretForRepo should return AuditLog", async () => {
     const secret_name = "FOO";
+    const environment = "";
     const dry_run = false;
     const target = "actions";
 
@@ -244,14 +253,15 @@ describe("setSecretForRepo", () => {
       secret_name,
       secrets.FOO,
       repo,
-      repoEnvironment,
+      environment,
       dry_run,
-      target
+      target,
+      "salt"
     );
     expect(auditLog.action === "set");
     expect(auditLog.repo === repo.full_name);
     expect(auditLog.dry_run === dry_run);
-    expect(auditLog.environment === repoEnvironment);
+    expect(auditLog.environment === environment);
     expect(auditLog.target === target);
     expect(auditLog.secret_name == secret_name);
     expect(auditLog.secret_hash != null);
@@ -294,6 +304,8 @@ describe("setSecretForRepo with environment", () => {
         }
       )
       .reply(200);
+
+    (utils.hash as jest.Mock) = jest.fn().mockImplementation(() => "hash");
   });
 
   test("setSecretForRepo should retrieve public key", async () => {
@@ -304,7 +316,8 @@ describe("setSecretForRepo with environment", () => {
       repo,
       repoEnvironment,
       true,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(environmentPublicKeyMock.isDone()).toBeTruthy();
   });
@@ -317,7 +330,8 @@ describe("setSecretForRepo with environment", () => {
       repo,
       repoEnvironment,
       true,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(environmentPublicKeyMock.isDone()).toBeTruthy();
     expect(setEnvironmentSecretMock.isDone()).toBeFalsy();
@@ -331,7 +345,8 @@ describe("setSecretForRepo with environment", () => {
       repo,
       repoEnvironment,
       true,
-      "dependabot"
+      "dependabot",
+      "salt"
     );
     expect(environmentPublicKeyMock.isDone()).toBeTruthy();
     expect(setEnvironmentSecretMock.isDone()).toBeFalsy();
@@ -345,7 +360,8 @@ describe("setSecretForRepo with environment", () => {
       repo,
       repoEnvironment,
       false,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(nock.isDone()).toBeTruthy();
   });
@@ -362,7 +378,8 @@ describe("setSecretForRepo with environment", () => {
       repo,
       repoEnvironment,
       dry_run,
-      target
+      target,
+      "salt"
     );
     expect(auditLog.action === "set");
     expect(auditLog.repo === repo.full_name);
@@ -403,7 +420,8 @@ describe("deleteSecretForRepo", () => {
       repo,
       "",
       true,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(deleteActionsSecretMock.isDone()).toBeFalsy();
   });
@@ -416,7 +434,8 @@ describe("deleteSecretForRepo", () => {
       repo,
       "",
       false,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(deleteActionsSecretMock.isDone()).toBeTruthy();
   });
@@ -429,7 +448,8 @@ describe("deleteSecretForRepo", () => {
       repo,
       "",
       false,
-      "dependabot"
+      "dependabot",
+      "salt"
     );
     expect(deleteDependabotSecretMock.isDone()).toBeTruthy();
   });
@@ -462,7 +482,8 @@ describe("deleteSecretForRepo with environment", () => {
       repo,
       repoEnvironment,
       true,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(deleteSecretMock.isDone()).toBeFalsy();
   });
@@ -475,7 +496,8 @@ describe("deleteSecretForRepo with environment", () => {
       repo,
       repoEnvironment,
       true,
-      "dependabot"
+      "dependabot",
+      "salt"
     );
     expect(deleteSecretMock.isDone()).toBeFalsy();
   });
@@ -488,7 +510,8 @@ describe("deleteSecretForRepo with environment", () => {
       repo,
       repoEnvironment,
       false,
-      "actions"
+      "actions",
+      "salt"
     );
     expect(nock.isDone()).toBeTruthy();
   });
@@ -498,14 +521,15 @@ describe("deleteSecretForRepo with environment", () => {
     const dry_run = false;
     const target = "actions";
 
-    const auditLog = await setSecretForRepo(
+    const auditLog = await deleteSecretForRepo(
       octokit,
       secret_name,
       secrets.FOO,
       repo,
       repoEnvironment,
       dry_run,
-      target
+      target,
+      "salt"
     );
     expect(auditLog.action === "delete");
     expect(auditLog.repo === repo.full_name);

@@ -249,13 +249,13 @@ export async function setSecretForRepo(
   repo: Repository,
   environment: string,
   dry_run: boolean,
-  target: string
+  target: string,
+  audit_log_hashing_salt: string
 ): Promise<AuditLog> {
   const [repo_owner, repo_name] = repo.full_name.split("/");
 
   const publicKey = await getPublicKey(octokit, repo, environment, target);
   const encrypted_value = encrypt(secret, publicKey.key);
-  const hashed_value = hash(secret);
 
   core.info(`Set \`${name} = ***\` (${target}) on ${repo.full_name}`);
 
@@ -293,6 +293,8 @@ export async function setSecretForRepo(
     }
   }
 
+  const hashed_value = hash(secret, audit_log_hashing_salt);
+
   return {
     repo: repo.full_name,
     target,
@@ -311,7 +313,8 @@ export async function deleteSecretForRepo(
   repo: Repository,
   environment: string,
   dry_run: boolean,
-  target: string
+  target: string,
+  audit_log_hashing_salt?: string
 ): Promise<AuditLog> {
   core.info(`Remove ${name} (${target}) from ${repo.full_name}`);
 

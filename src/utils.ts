@@ -19,7 +19,7 @@ import * as core from "@actions/core";
 // @ts-ignore-next-line
 import { seal } from "tweetsodium";
 
-import { createHash } from "crypto";
+import crypto from "crypto";
 
 export function encrypt(value: string, key: string): string {
   // Convert the message and key to Uint8Array's (Buffer implements that interface)
@@ -38,6 +38,10 @@ export function encrypt(value: string, key: string): string {
   return encrypted;
 }
 
-export function hash(value: string): string {
-  return createHash("sha512").update(value).digest("hex");
+export function hash(value: string, salt: string): string {
+  const hashed_value = crypto
+    .pbkdf2Sync(value, salt, 210000, 100, "sha512")
+    .toString("hex");
+
+  return hashed_value.substr(hashed_value.length - 10);
 }

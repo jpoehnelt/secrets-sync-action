@@ -60,6 +60,9 @@ function getConfig() {
         RUN_DELETE: ["1", "true"].includes(core.getInput("DELETE", { required: false }).toLowerCase()),
         ENVIRONMENT: core.getInput("ENVIRONMENT", { required: false }),
         TARGET: core.getInput("TARGET", { required: false }),
+        AUDIT_LOG_HASHING_SALT: core.getInput("AUDIT_LOG_HASHING_SALT", {
+            required: false,
+        }),
     };
     if (config.DRY_RUN) {
         core.info("[DRY_RUN='true'] No changes will be written to secrets");
@@ -270,12 +273,11 @@ function getPublicKey(octokit, repo, environment, target) {
     });
 }
 exports.getPublicKey = getPublicKey;
-function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, target) {
+function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, target, audit_log_hashing_salt) {
     return __awaiter(this, void 0, void 0, function* () {
         const [repo_owner, repo_name] = repo.full_name.split("/");
         const publicKey = yield getPublicKey(octokit, repo, environment, target);
         const encrypted_value = (0, utils_1.encrypt)(secret, publicKey.key);
-        const hashed_value = (0, utils_1.hash)(secret);
         core.info(`Set \`${name} = ***\` (${target}) on ${repo.full_name}`);
         if (!dry_run) {
             switch (target) {
@@ -311,6 +313,7 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
                     break;
             }
         }
+        const hashed_value = (0, utils_1.hash)(secret, audit_log_hashing_salt);
         return {
             repo: repo.full_name,
             target,
@@ -323,7 +326,7 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
     });
 }
 exports.setSecretForRepo = setSecretForRepo;
-function deleteSecretForRepo(octokit, name, secret, repo, environment, dry_run, target) {
+function deleteSecretForRepo(octokit, name, secret, repo, environment, dry_run, target, audit_log_hashing_salt) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Remove ${name} (${target}) from ${repo.full_name}`);
         try {
@@ -469,6 +472,7 @@ function run() {
                 FOUND_SECRETS: Object.keys(secrets),
                 ENVIRONMENT: config.ENVIRONMENT,
                 TARGET: config.TARGET,
+                AUDIT_LOG_HASHING_SALT: config.AUDIT_LOG_HASHING_SALT,
             }, null, 2));
             const limit = (0, p_limit_1.default)(config.CONCURRENCY);
             const calls = [];
@@ -477,7 +481,7 @@ function run() {
                     const action = config.RUN_DELETE
                         ? github_1.deleteSecretForRepo
                         : github_1.setSecretForRepo;
-                    calls.push(limit(() => action(octokit, k, secrets[k], repo, config.ENVIRONMENT, config.DRY_RUN, config.TARGET)));
+                    calls.push(limit(() => action(octokit, k, secrets[k], repo, config.ENVIRONMENT, config.DRY_RUN, config.TARGET, config.AUDIT_LOG_HASHING_SALT)));
                 }
             }
             yield Promise.all(calls).then((audit_log) => core.setOutput("audit_log", audit_log));
@@ -603,12 +607,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.hash = exports.encrypt = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 // @ts-ignore-next-line
 const tweetsodium_1 = __nccwpck_require__(7637);
-const crypto_1 = __nccwpck_require__(6113);
+const crypto_1 = __importDefault(__nccwpck_require__(6113));
 function encrypt(value, key) {
     // Convert the message and key to Uint8Array's (Buffer implements that interface)
     const messageBytes = Buffer.from(value, "utf8");
@@ -622,8 +629,11 @@ function encrypt(value, key) {
     return encrypted;
 }
 exports.encrypt = encrypt;
-function hash(value) {
-    return (0, crypto_1.createHash)("sha256").update(value).digest("hex");
+function hash(value, salt) {
+    const hashed_value = crypto_1.default
+        .pbkdf2Sync(value, salt, 210000, 100, "sha512")
+        .toString("hex");
+    return hashed_value.substr(hashed_value.length - 10);
 }
 exports.hash = hash;
 

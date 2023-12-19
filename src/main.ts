@@ -89,6 +89,7 @@ export async function run(): Promise<void> {
           FOUND_SECRETS: Object.keys(secrets),
           ENVIRONMENT: config.ENVIRONMENT,
           TARGET: config.TARGET,
+          AUDIT_LOG_HASHING_SALT: config.AUDIT_LOG_HASHING_SALT,
         },
         null,
         2
@@ -112,7 +113,8 @@ export async function run(): Promise<void> {
               repo,
               config.ENVIRONMENT,
               config.DRY_RUN,
-              config.TARGET
+              config.TARGET,
+              config.AUDIT_LOG_HASHING_SALT
             )
           )
         );
