@@ -299,10 +299,10 @@ export async function setSecretForRepo(
     repo: repo.full_name,
     target,
     action: "set",
-    dry_run,
-    environment,
     secret_name: name,
     secret_hash: hashed_value,
+    environment,
+    dry_run,
   };
 }
 
@@ -350,8 +350,8 @@ export async function deleteSecretForRepo(
     repo: repo.full_name,
     target,
     action: "delete",
-    dry_run,
-    environment,
     secret_name: name,
+    environment,
+    dry_run,
   };
 }

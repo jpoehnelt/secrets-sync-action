@@ -318,10 +318,10 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
             repo: repo.full_name,
             target,
             action: "set",
-            dry_run,
-            environment,
             secret_name: name,
             secret_hash: hashed_value,
+            environment,
+            dry_run,
         };
     });
 }
@@ -355,9 +355,9 @@ function deleteSecretForRepo(octokit, name, secret, repo, environment, dry_run, 
             repo: repo.full_name,
             target,
             action: "delete",
-            dry_run,
-            environment,
             secret_name: name,
+            environment,
+            dry_run,
         };
     });
 }
