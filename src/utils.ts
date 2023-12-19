@@ -39,5 +39,5 @@ export function encrypt(value: string, key: string): string {
 }
 
 export function hash(value: string): string {
-  return createHash("sha256").update(value).digest("hex");
+  return createHash("sha512").update(value).digest("hex");
 }
