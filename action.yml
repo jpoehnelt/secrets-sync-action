@@ -67,6 +67,14 @@ inputs:
       Target where secrets should be stored: `actions` (default) or `dependabot`.
     default: "actions"
     required: false
+  audit_log_hashing_salt:
+    default: ""
+    description: |
+      Salt for hashing the secrets in the audit log.
+outputs:
+  audit_log:
+    description: |
+      Audit log (JSON structure) describing which secrets have been updated in which repository.
 runs:
   using: 'node16'
   main: 'dist/index.js'

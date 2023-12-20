@@ -19,6 +19,8 @@ import * as core from "@actions/core";
 // @ts-ignore-next-line
 import { seal } from "tweetsodium";
 
+import crypto from "crypto";
+
 export function encrypt(value: string, key: string): string {
   // Convert the message and key to Uint8Array's (Buffer implements that interface)
   const messageBytes = Buffer.from(value, "utf8");
@@ -34,4 +36,14 @@ export function encrypt(value: string, key: string): string {
   core.setSecret(encrypted);
 
   return encrypted;
+}
+
+// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
+const hashing_iterations = 210000;
+const hashing_key_length = 5;
+
+export function hash(value: string, salt: string): string {
+  return crypto
+    .pbkdf2Sync(value, salt, hashing_iterations, hashing_key_length, "sha512")
+    .toString("hex");
 }

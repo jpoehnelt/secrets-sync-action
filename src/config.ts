@@ -28,6 +28,7 @@ export interface Config {
   RUN_DELETE: boolean;
   ENVIRONMENT: string;
   TARGET: string;
+  AUDIT_LOG_HASHING_SALT: string;
 }
 
 export function getConfig(): Config {
@@ -54,6 +55,9 @@ export function getConfig(): Config {
     ),
     ENVIRONMENT: core.getInput("ENVIRONMENT", { required: false }),
     TARGET: core.getInput("TARGET", { required: false }),
+    AUDIT_LOG_HASHING_SALT: core.getInput("AUDIT_LOG_HASHING_SALT", {
+      required: false,
+    }),
   };
 
   if (config.DRY_RUN) {

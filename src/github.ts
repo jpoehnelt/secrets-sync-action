@@ -17,7 +17,7 @@
 import * as core from "@actions/core";
 
 import { Octokit } from "@octokit/rest";
-import { encrypt } from "./utils";
+import { encrypt, hash } from "./utils";
 import { getConfig } from "./config";
 import { retry } from "@octokit/plugin-retry";
 
@@ -30,6 +30,34 @@ export interface Repository {
 export interface PublicKey {
   key: string;
   key_id: string;
+}
+
+export class AuditLog {
+  repo: string;
+  target: string;
+  action: string;
+  secret_name: string;
+  secret_hash?: string;
+  environment?: string;
+  dry_run: boolean;
+
+  constructor(
+    repo: string,
+    target: string,
+    action: string,
+    secret_name: string,
+    secret_hash: string,
+    environment: string,
+    dry_run: boolean
+  ) {
+    this.repo = repo;
+    this.target = target;
+    this.action = action;
+    this.secret_name = secret_name;
+    this.secret_hash = secret_hash;
+    this.environment = environment;
+    this.dry_run = dry_run;
+  }
 }
 
 export const publicKeyCache = new Map<Repository, PublicKey>();
@@ -221,29 +249,31 @@ export async function setSecretForRepo(
   repo: Repository,
   environment: string,
   dry_run: boolean,
-  target: string
-): Promise<void> {
+  target: string,
+  audit_log_hashing_salt: string
+): Promise<AuditLog> {
   const [repo_owner, repo_name] = repo.full_name.split("/");
 
   const publicKey = await getPublicKey(octokit, repo, environment, target);
   const encrypted_value = encrypt(secret, publicKey.key);
 
-  core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
+  core.info(`Set \`${name} = ***\` (${target}) on ${repo.full_name}`);
 
   if (!dry_run) {
     switch (target) {
       case "dependabot":
-        return octokit.dependabot.createOrUpdateRepoSecret({
+        await octokit.dependabot.createOrUpdateRepoSecret({
           owner: repo_owner,
           repo: repo_name,
           secret_name: name,
           key_id: publicKey.key_id,
           encrypted_value,
         });
+        break;
       case "actions":
       default:
         if (environment) {
-          return octokit.actions.createOrUpdateEnvironmentSecret({
+          await octokit.actions.createOrUpdateEnvironmentSecret({
             repository_id: repo.id,
             environment_name: environment,
             secret_name: name,
@@ -251,7 +281,7 @@ export async function setSecretForRepo(
             encrypted_value,
           });
         } else {
-          return octokit.actions.createOrUpdateRepoSecret({
+          await octokit.actions.createOrUpdateRepoSecret({
             owner: repo_owner,
             repo: repo_name,
             secret_name: name,
@@ -259,8 +289,21 @@ export async function setSecretForRepo(
             encrypted_value,
           });
         }
+        break;
     }
   }
+
+  const hashed_value = hash(secret, audit_log_hashing_salt);
+
+  return {
+    repo: repo.full_name,
+    target,
+    action: "set",
+    secret_name: name,
+    secret_hash: hashed_value,
+    environment,
+    dry_run,
+  };
 }
 
 export async function deleteSecretForRepo(
@@ -270,32 +313,45 @@ export async function deleteSecretForRepo(
   repo: Repository,
   environment: string,
   dry_run: boolean,
-  target: string
-): Promise<void> {
-  core.info(`Remove ${name} from ${repo.full_name}`);
+  target: string,
+  audit_log_hashing_salt?: string
+): Promise<AuditLog> {
+  core.info(`Remove ${name} (${target}) from ${repo.full_name}`);
 
   try {
     if (!dry_run) {
       const action = "DELETE";
       switch (target) {
         case "dependabot":
-          return octokit.request(
+          await octokit.request(
             `${action} /repos/${repo.full_name}/dependabot/secrets/${name}`
           );
+
+          break;
         case "actions":
         default:
           if (environment) {
-            return octokit.request(
+            await octokit.request(
               `${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`
             );
           } else {
-            return octokit.request(
+            await octokit.request(
               `${action} /repos/${repo.full_name}/actions/secrets/${name}`
             );
           }
+          break;
       }
     }
   } catch (HttpError) {
     //If secret is not found in target repo, silently continue
   }
+
+  return {
+    repo: repo.full_name,
+    target,
+    action: "delete",
+    secret_name: name,
+    environment,
+    dry_run,
+  };
 }
