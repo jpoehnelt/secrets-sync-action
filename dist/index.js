@@ -631,7 +631,7 @@ function encrypt(value, key) {
 exports.encrypt = encrypt;
 // https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
 const hashing_iterations = 210000;
-const hashing_key_length = 10;
+const hashing_key_length = 5;
 function hash(value, salt) {
     return crypto_1.default
         .pbkdf2Sync(value, salt, hashing_iterations, hashing_key_length, "sha512")
