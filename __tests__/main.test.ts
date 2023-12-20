@@ -123,12 +123,6 @@ test("run should fail if target is not supported", async () => {
     .fn()
     .mockImplementation(async () => null);
 
-  jest.mock("@actions/core", () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ...(jest.requireActual("@actions/core") as any),
-    setFailed: jest.fn(),
-  }));
-
   (secrets.getSecrets as jest.Mock) = jest.fn().mockReturnValue({
     BAZ: "bar",
   });

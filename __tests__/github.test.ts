@@ -258,13 +258,13 @@ describe("setSecretForRepo", () => {
       target,
       "salt"
     );
-    expect(auditLog.action === "set");
-    expect(auditLog.repo === repo.full_name);
-    expect(auditLog.target === target);
-    expect(auditLog.secret_name == secret_name);
-    expect(auditLog.secret_hash != null);
-    expect(auditLog.environment === environment);
-    expect(auditLog.dry_run === dry_run);
+    expect(auditLog.action).toEqual("set");
+    expect(auditLog.repo).toEqual(repo.full_name);
+    expect(auditLog.target).toEqual(target);
+    expect(auditLog.secret_name).toEqual(secret_name);
+    expect(auditLog.secret_hash).not.toBeNull();
+    expect(auditLog.environment).toEqual(environment);
+    expect(auditLog.dry_run).toEqual(dry_run);
   });
 });
 
@@ -381,13 +381,13 @@ describe("setSecretForRepo with environment", () => {
       target,
       "salt"
     );
-    expect(auditLog.action === "set");
-    expect(auditLog.repo === repo.full_name);
-    expect(auditLog.target === target);
-    expect(auditLog.secret_name == secret_name);
-    expect(auditLog.secret_hash != null);
-    expect(auditLog.environment === repoEnvironment);
-    expect(auditLog.dry_run === dry_run);
+    expect(auditLog.action).toEqual("set");
+    expect(auditLog.repo).toEqual(repo.full_name);
+    expect(auditLog.target).toEqual(target);
+    expect(auditLog.secret_name).toEqual(secret_name);
+    expect(auditLog.secret_hash).not.toBeNull();
+    expect(auditLog.environment).toEqual(repoEnvironment);
+    expect(auditLog.dry_run).toEqual(dry_run);
   });
 });
 
@@ -531,12 +531,12 @@ describe("deleteSecretForRepo with environment", () => {
       target,
       "salt"
     );
-    expect(auditLog.action === "delete");
-    expect(auditLog.repo === repo.full_name);
-    expect(auditLog.target === target);
-    expect(auditLog.secret_name == secret_name);
-    expect(auditLog.secret_hash != null);
-    expect(auditLog.environment === repoEnvironment);
-    expect(auditLog.dry_run === dry_run);
+    expect(auditLog.action).toEqual("delete");
+    expect(auditLog.repo).toEqual(repo.full_name);
+    expect(auditLog.target).toEqual(target);
+    expect(auditLog.secret_name).toEqual(secret_name);
+    expect(auditLog.secret_hash).not.toBeNull();
+    expect(auditLog.environment).toEqual(repoEnvironment);
+    expect(auditLog.dry_run).toEqual(dry_run);
   });
 });

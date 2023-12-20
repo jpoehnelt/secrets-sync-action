@@ -22,11 +22,28 @@ test("encrypt should return a value", () => {
   expect(encrypt("baz", key)).toBeTruthy();
 });
 
+test("hashing algorithm golden standard", async () => {
+  const value = "baz";
+  const salt = "salt";
+  const hashed_value = hash(value, salt);
+
+  // After making changes to the hashing algorithm, this output should stay intact.
+  expect(hashed_value).toEqual("b6c1ba0fdd");
+});
+
 test("hashing the same value should return the same result", async () => {
   const value = "baz";
   const salt = "salt";
   const hashed_value_1 = hash(value, salt);
   const hashed_value_2 = hash(value, salt);
 
-  expect(hashed_value_1 === hashed_value_2);
+  expect(hashed_value_1).toEqual(hashed_value_2);
+});
+
+test("hashing a different value should return a different result", async () => {
+  const salt = "salt";
+  const hashed_value_1 = hash("bar", salt);
+  const hashed_value_2 = hash("baz", salt);
+
+  expect(hashed_value_1).not.toEqual(hashed_value_2);
 });

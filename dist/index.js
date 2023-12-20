@@ -629,11 +629,13 @@ function encrypt(value, key) {
     return encrypted;
 }
 exports.encrypt = encrypt;
+// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
+const hashing_iterations = 210000;
+const hashing_key_length = 10;
 function hash(value, salt) {
-    const hashed_value = crypto_1.default
-        .pbkdf2Sync(value, salt, 210000, 100, "sha512")
+    return crypto_1.default
+        .pbkdf2Sync(value, salt, hashing_iterations, hashing_key_length, "sha512")
         .toString("hex");
-    return hashed_value.substr(hashed_value.length - 10);
 }
 exports.hash = hash;
 

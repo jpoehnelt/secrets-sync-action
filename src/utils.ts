@@ -38,10 +38,12 @@ export function encrypt(value: string, key: string): string {
   return encrypted;
 }
 
-export function hash(value: string, salt: string): string {
-  const hashed_value = crypto
-    .pbkdf2Sync(value, salt, 210000, 100, "sha512")
-    .toString("hex");
+// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
+const hashing_iterations = 210000;
+const hashing_key_length = 5;
 
-  return hashed_value.substr(hashed_value.length - 10);
+export function hash(value: string, salt: string): string {
+  return crypto
+    .pbkdf2Sync(value, salt, hashing_iterations, hashing_key_length, "sha512")
+    .toString("hex");
 }
