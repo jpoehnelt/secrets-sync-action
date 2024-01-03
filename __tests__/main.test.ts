@@ -22,7 +22,6 @@ import * as secrets from "../src/secrets";
 import fixture from "@octokit/fixtures/scenarios/api.github.com/get-repository/normalized-fixture.json";
 import nock from "nock";
 import { run } from "../src/main";
-import { setFailed } from "@actions/core";
 
 nock.disableNetConnect();
 
