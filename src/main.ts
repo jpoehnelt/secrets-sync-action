@@ -23,6 +23,7 @@ import {
   setSecretForRepo,
   deleteSecretForRepo,
   getRepos,
+  AuditLog,
 } from "./github";
 
 import { getConfig } from "./config";
@@ -88,6 +89,7 @@ export async function run(): Promise<void> {
           FOUND_SECRETS: Object.keys(secrets),
           ENVIRONMENT: config.ENVIRONMENT,
           TARGET: config.TARGET,
+          AUDIT_LOG_HASHING_SALT: config.AUDIT_LOG_HASHING_SALT,
         },
         null,
         2
@@ -95,7 +97,7 @@ export async function run(): Promise<void> {
     );
 
     const limit = pLimit(config.CONCURRENCY);
-    const calls: Promise<void>[] = [];
+    const calls: Promise<AuditLog>[] = [];
     for (const repo of repos) {
       for (const k of Object.keys(secrets)) {
         const action = config.RUN_DELETE
@@ -111,13 +113,16 @@ export async function run(): Promise<void> {
               repo,
               config.ENVIRONMENT,
               config.DRY_RUN,
-              config.TARGET
+              config.TARGET,
+              config.AUDIT_LOG_HASHING_SALT
             )
           )
         );
       }
     }
-    await Promise.all(calls);
+    await Promise.all(calls).then((audit_log) =>
+      core.setOutput("audit_log", audit_log)
+    );
   } catch (error: any) {
     /* istanbul ignore next */
     core.error(error);

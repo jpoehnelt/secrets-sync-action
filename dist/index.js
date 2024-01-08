@@ -60,6 +60,9 @@ function getConfig() {
         RUN_DELETE: ["1", "true"].includes(core.getInput("DELETE", { required: false }).toLowerCase()),
         ENVIRONMENT: core.getInput("ENVIRONMENT", { required: false }),
         TARGET: core.getInput("TARGET", { required: false }),
+        AUDIT_LOG_HASHING_SALT: core.getInput("AUDIT_LOG_HASHING_SALT") ||
+            process.env.GITHUB_REPOSITORY_ID ||
+            "",
     };
     if (config.DRY_RUN) {
         core.info("[DRY_RUN='true'] No changes will be written to secrets");
@@ -131,12 +134,24 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.deleteSecretForRepo = exports.setSecretForRepo = exports.getPublicKey = exports.filterReposByPatterns = exports.listAllReposForAuthenticatedUser = exports.listAllMatchingRepos = exports.getRepos = exports.DefaultOctokit = exports.publicKeyCache = void 0;
+exports.deleteSecretForRepo = exports.setSecretForRepo = exports.getPublicKey = exports.filterReposByPatterns = exports.listAllReposForAuthenticatedUser = exports.listAllMatchingRepos = exports.getRepos = exports.DefaultOctokit = exports.publicKeyCache = exports.AuditLog = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const rest_1 = __nccwpck_require__(5375);
 const utils_1 = __nccwpck_require__(918);
 const config_1 = __nccwpck_require__(88);
 const plugin_retry_1 = __nccwpck_require__(6298);
+class AuditLog {
+    constructor(repo, target, action, secret_name, secret_hash, environment, dry_run) {
+        this.repo = repo;
+        this.target = target;
+        this.action = action;
+        this.secret_name = secret_name;
+        this.secret_hash = secret_hash;
+        this.environment = environment;
+        this.dry_run = dry_run;
+    }
+}
+exports.AuditLog = AuditLog;
 exports.publicKeyCache = new Map();
 const RetryOctokit = rest_1.Octokit.plugin(plugin_retry_1.retry);
 function DefaultOctokit(_a) {
@@ -258,26 +273,27 @@ function getPublicKey(octokit, repo, environment, target) {
     });
 }
 exports.getPublicKey = getPublicKey;
-function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, target) {
+function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, target, audit_log_hashing_salt) {
     return __awaiter(this, void 0, void 0, function* () {
         const [repo_owner, repo_name] = repo.full_name.split("/");
         const publicKey = yield getPublicKey(octokit, repo, environment, target);
         const encrypted_value = (0, utils_1.encrypt)(secret, publicKey.key);
-        core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
+        core.info(`Set \`${name} = ***\` (${target}) on ${repo.full_name}`);
         if (!dry_run) {
             switch (target) {
                 case "dependabot":
-                    return octokit.dependabot.createOrUpdateRepoSecret({
+                    yield octokit.dependabot.createOrUpdateRepoSecret({
                         owner: repo_owner,
                         repo: repo_name,
                         secret_name: name,
                         key_id: publicKey.key_id,
                         encrypted_value,
                     });
+                    break;
                 case "actions":
                 default:
                     if (environment) {
-                        return octokit.actions.createOrUpdateEnvironmentSecret({
+                        yield octokit.actions.createOrUpdateEnvironmentSecret({
                             repository_id: repo.id,
                             environment_name: environment,
                             secret_name: name,
@@ -286,7 +302,7 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
                         });
                     }
                     else {
-                        return octokit.actions.createOrUpdateRepoSecret({
+                        yield octokit.actions.createOrUpdateRepoSecret({
                             owner: repo_owner,
                             repo: repo_name,
                             secret_name: name,
@@ -294,34 +310,55 @@ function setSecretForRepo(octokit, name, secret, repo, environment, dry_run, tar
                             encrypted_value,
                         });
                     }
+                    break;
             }
         }
+        const hashed_value = (0, utils_1.hash)(secret, audit_log_hashing_salt);
+        return {
+            repo: repo.full_name,
+            target,
+            action: "set",
+            secret_name: name,
+            secret_hash: hashed_value,
+            environment,
+            dry_run,
+        };
     });
 }
 exports.setSecretForRepo = setSecretForRepo;
-function deleteSecretForRepo(octokit, name, secret, repo, environment, dry_run, target) {
+function deleteSecretForRepo(octokit, name, secret, repo, environment, dry_run, target, audit_log_hashing_salt) {
     return __awaiter(this, void 0, void 0, function* () {
-        core.info(`Remove ${name} from ${repo.full_name}`);
+        core.info(`Remove ${name} (${target}) from ${repo.full_name}`);
         try {
             if (!dry_run) {
                 const action = "DELETE";
                 switch (target) {
                     case "dependabot":
-                        return octokit.request(`${action} /repos/${repo.full_name}/dependabot/secrets/${name}`);
+                        yield octokit.request(`${action} /repos/${repo.full_name}/dependabot/secrets/${name}`);
+                        break;
                     case "actions":
                     default:
                         if (environment) {
-                            return octokit.request(`${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`);
+                            yield octokit.request(`${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`);
                         }
                         else {
-                            return octokit.request(`${action} /repos/${repo.full_name}/actions/secrets/${name}`);
+                            yield octokit.request(`${action} /repos/${repo.full_name}/actions/secrets/${name}`);
                         }
+                        break;
                 }
             }
         }
         catch (HttpError) {
             //If secret is not found in target repo, silently continue
         }
+        return {
+            repo: repo.full_name,
+            target,
+            action: "delete",
+            secret_name: name,
+            environment,
+            dry_run,
+        };
     });
 }
 exports.deleteSecretForRepo = deleteSecretForRepo;
@@ -435,6 +472,7 @@ function run() {
                 FOUND_SECRETS: Object.keys(secrets),
                 ENVIRONMENT: config.ENVIRONMENT,
                 TARGET: config.TARGET,
+                AUDIT_LOG_HASHING_SALT: config.AUDIT_LOG_HASHING_SALT,
             }, null, 2));
             const limit = (0, p_limit_1.default)(config.CONCURRENCY);
             const calls = [];
@@ -443,10 +481,10 @@ function run() {
                     const action = config.RUN_DELETE
                         ? github_1.deleteSecretForRepo
                         : github_1.setSecretForRepo;
-                    calls.push(limit(() => action(octokit, k, secrets[k], repo, config.ENVIRONMENT, config.DRY_RUN, config.TARGET)));
+                    calls.push(limit(() => action(octokit, k, secrets[k], repo, config.ENVIRONMENT, config.DRY_RUN, config.TARGET, config.AUDIT_LOG_HASHING_SALT)));
                 }
             }
-            yield Promise.all(calls);
+            yield Promise.all(calls).then((audit_log) => core.setOutput("audit_log", audit_log));
         }
         catch (error) {
             /* istanbul ignore next */
@@ -569,11 +607,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.encrypt = void 0;
+exports.hash = exports.encrypt = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 // @ts-ignore-next-line
 const tweetsodium_1 = __nccwpck_require__(7637);
+const crypto_1 = __importDefault(__nccwpck_require__(6113));
 function encrypt(value, key) {
     // Convert the message and key to Uint8Array's (Buffer implements that interface)
     const messageBytes = Buffer.from(value, "utf8");
@@ -587,6 +629,15 @@ function encrypt(value, key) {
     return encrypted;
 }
 exports.encrypt = encrypt;
+// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
+const hashing_iterations = 210000;
+const hashing_key_length = 5;
+function hash(value, salt) {
+    return crypto_1.default
+        .pbkdf2Sync(value, salt, hashing_iterations, hashing_key_length, "sha512")
+        .toString("hex");
+}
+exports.hash = hash;
 
 
 /***/ }),
@@ -730,7 +781,6 @@ const file_command_1 = __nccwpck_require__(717);
 const utils_1 = __nccwpck_require__(5278);
 const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
-const uuid_1 = __nccwpck_require__(8974);
 const oidc_utils_1 = __nccwpck_require__(8041);
 /**
  * The code to exit an action
@@ -760,20 +810,9 @@ function exportVariable(name, val) {
     process.env[name] = convertedVal;
     const filePath = process.env['GITHUB_ENV'] || '';
     if (filePath) {
-        const delimiter = `ghadelimiter_${uuid_1.v4()}`;
-        // These should realistically never happen, but just in case someone finds a way to exploit uuid generation let's not allow keys or values that contain the delimiter.
-        if (name.includes(delimiter)) {
-            throw new Error(`Unexpected input: name should not contain the delimiter "${delimiter}"`);
-        }
-        if (convertedVal.includes(delimiter)) {
-            throw new Error(`Unexpected input: value should not contain the delimiter "${delimiter}"`);
-        }
-        const commandValue = `${name}<<${delimiter}${os.EOL}${convertedVal}${os.EOL}${delimiter}`;
-        file_command_1.issueCommand('ENV', commandValue);
+        return file_command_1.issueFileCommand('ENV', file_command_1.prepareKeyValueMessage(name, val));
     }
-    else {
-        command_1.issueCommand('set-env', { name }, convertedVal);
-    }
+    command_1.issueCommand('set-env', { name }, convertedVal);
 }
 exports.exportVariable = exportVariable;
 /**
@@ -791,7 +830,7 @@ exports.setSecret = setSecret;
 function addPath(inputPath) {
     const filePath = process.env['GITHUB_PATH'] || '';
     if (filePath) {
-        file_command_1.issueCommand('PATH', inputPath);
+        file_command_1.issueFileCommand('PATH', inputPath);
     }
     else {
         command_1.issueCommand('add-path', {}, inputPath);
@@ -831,7 +870,10 @@ function getMultilineInput(name, options) {
     const inputs = getInput(name, options)
         .split('\n')
         .filter(x => x !== '');
-    return inputs;
+    if (options && options.trimWhitespace === false) {
+        return inputs;
+    }
+    return inputs.map(input => input.trim());
 }
 exports.getMultilineInput = getMultilineInput;
 /**
@@ -864,8 +906,12 @@ exports.getBooleanInput = getBooleanInput;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setOutput(name, value) {
+    const filePath = process.env['GITHUB_OUTPUT'] || '';
+    if (filePath) {
+        return file_command_1.issueFileCommand('OUTPUT', file_command_1.prepareKeyValueMessage(name, value));
+    }
     process.stdout.write(os.EOL);
-    command_1.issueCommand('set-output', { name }, value);
+    command_1.issueCommand('set-output', { name }, utils_1.toCommandValue(value));
 }
 exports.setOutput = setOutput;
 /**
@@ -994,7 +1040,11 @@ exports.group = group;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function saveState(name, value) {
-    command_1.issueCommand('save-state', { name }, value);
+    const filePath = process.env['GITHUB_STATE'] || '';
+    if (filePath) {
+        return file_command_1.issueFileCommand('STATE', file_command_1.prepareKeyValueMessage(name, value));
+    }
+    command_1.issueCommand('save-state', { name }, utils_1.toCommandValue(value));
 }
 exports.saveState = saveState;
 /**
@@ -1060,13 +1110,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.issueCommand = void 0;
+exports.prepareKeyValueMessage = exports.issueFileCommand = void 0;
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const fs = __importStar(__nccwpck_require__(7147));
 const os = __importStar(__nccwpck_require__(2037));
+const uuid_1 = __nccwpck_require__(8974);
 const utils_1 = __nccwpck_require__(5278);
-function issueCommand(command, message) {
+function issueFileCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
     if (!filePath) {
         throw new Error(`Unable to find environment variable for file command ${command}`);
@@ -1078,7 +1129,22 @@ function issueCommand(command, message) {
         encoding: 'utf8'
     });
 }
-exports.issueCommand = issueCommand;
+exports.issueFileCommand = issueFileCommand;
+function prepareKeyValueMessage(key, value) {
+    const delimiter = `ghadelimiter_${uuid_1.v4()}`;
+    const convertedValue = utils_1.toCommandValue(value);
+    // These should realistically never happen, but just in case someone finds a
+    // way to exploit uuid generation let's not allow keys or values that contain
+    // the delimiter.
+    if (key.includes(delimiter)) {
+        throw new Error(`Unexpected input: name should not contain the delimiter "${delimiter}"`);
+    }
+    if (convertedValue.includes(delimiter)) {
+        throw new Error(`Unexpected input: value should not contain the delimiter "${delimiter}"`);
+    }
+    return `${key}<<${delimiter}${os.EOL}${convertedValue}${os.EOL}${delimiter}`;
+}
+exports.prepareKeyValueMessage = prepareKeyValueMessage;
 //# sourceMappingURL=file-command.js.map
 
 /***/ }),
@@ -1133,7 +1199,7 @@ class OidcClient {
                 .catch(error => {
                 throw new Error(`Failed to get ID Token. \n 
         Error Code : ${error.statusCode}\n 
-        Error Message: ${error.result.message}`);
+        Error Message: ${error.message}`);
             });
             const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
             if (!id_token) {

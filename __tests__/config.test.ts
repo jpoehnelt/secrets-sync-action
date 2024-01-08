@@ -37,6 +37,7 @@ describe("getConfig", () => {
   const RUN_DELETE = false;
   const ENVIRONMENT = "production";
   const TARGET = "actions";
+  const AUDIT_LOG_HASHING_SALT = "salt";
 
   // Must implement because operands for delete must be optional in typescript >= 4.0
   interface Inputs {
@@ -51,6 +52,7 @@ describe("getConfig", () => {
     INPUT_RUN_DELETE: string;
     INPUT_ENVIRONMENT: string;
     INPUT_TARGET: string;
+    INPUT_AUDIT_LOG_HASHING_SALT: string;
   }
   const inputs: Inputs = {
     INPUT_GITHUB_API_URL: String(GITHUB_API_URL),
@@ -64,6 +66,7 @@ describe("getConfig", () => {
     INPUT_RUN_DELETE: String(RUN_DELETE),
     INPUT_ENVIRONMENT: String(ENVIRONMENT),
     INPUT_TARGET: String(TARGET),
+    INPUT_AUDIT_LOG_HASHING_SALT: String(AUDIT_LOG_HASHING_SALT),
   };
 
   beforeEach(() => {
@@ -93,6 +96,7 @@ describe("getConfig", () => {
       RUN_DELETE,
       ENVIRONMENT,
       TARGET,
+      AUDIT_LOG_HASHING_SALT,
     });
   });
 
