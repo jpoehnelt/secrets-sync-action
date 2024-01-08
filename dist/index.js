@@ -60,9 +60,9 @@ function getConfig() {
         RUN_DELETE: ["1", "true"].includes(core.getInput("DELETE", { required: false }).toLowerCase()),
         ENVIRONMENT: core.getInput("ENVIRONMENT", { required: false }),
         TARGET: core.getInput("TARGET", { required: false }),
-        AUDIT_LOG_HASHING_SALT: core.getInput("AUDIT_LOG_HASHING_SALT", {
-            required: false,
-        }),
+        AUDIT_LOG_HASHING_SALT: core.getInput("AUDIT_LOG_HASHING_SALT") ||
+            process.env.GITHUB_REPOSITORY_ID ||
+            "",
     };
     if (config.DRY_RUN) {
         core.info("[DRY_RUN='true'] No changes will be written to secrets");
@@ -631,7 +631,7 @@ function encrypt(value, key) {
 exports.encrypt = encrypt;
 // https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
 const hashing_iterations = 210000;
-const hashing_key_length = 10;
+const hashing_key_length = 5;
 function hash(value, salt) {
     return crypto_1.default
         .pbkdf2Sync(value, salt, hashing_iterations, hashing_key_length, "sha512")
