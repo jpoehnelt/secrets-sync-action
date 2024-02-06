@@ -52,7 +52,7 @@ If this value is set to the name of a valid environment in the target repositori
 
 ### `target`
 
-Target where secrets should be stored: `actions` (default) or `dependabot`.
+Target where secrets should be stored: `actions` (default), `codespaces` or `dependabot`.
 
 ## Usage
 
