@@ -40,7 +40,7 @@ export async function run(): Promise<void> {
       return;
     }
 
-    const allowedTargets = ["dependabot", "actions"];
+    const allowedTargets = ["dependabot", "actions", "codespaces"];
     if (!allowedTargets.some((x) => x === config.TARGET)) {
       core.setFailed(
         `Target: Value not in supported targets: ${allowedTargets}`

@@ -64,7 +64,7 @@ inputs:
     required: false
   target:
     description: |
-      Target where secrets should be stored: `actions` (default) or `dependabot`.
+      Target where secrets should be stored: `actions` (default), `codespaces` or `dependabot`.
     default: "actions"
     required: false
 runs:
