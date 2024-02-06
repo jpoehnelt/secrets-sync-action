@@ -397,7 +397,7 @@ function run() {
                 core.setFailed(`Secrets: no matches with "${config.SECRETS.join(", ")}"`);
                 return;
             }
-            const allowedTargets = ["dependabot", "actions"];
+            const allowedTargets = ["dependabot", "actions", "codespaces"];
             if (!allowedTargets.some((x) => x === config.TARGET)) {
                 core.setFailed(`Target: Value not in supported targets: ${allowedTargets}`);
                 return;
