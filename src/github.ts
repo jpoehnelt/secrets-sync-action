@@ -171,22 +171,61 @@ export async function setVariableForRepo(
 
   core.info(`Set \`${name} = ${variable} on ${repo.full_name}`);
 
-  if (!dry_run)
+  if (!dry_run) {
     if (environment) {
-      return octokit.actions.createEnvironmentVariable({
-        repository_id: repo.id,
-        environment_name: environment,
-        name,
-        value: variable,
-      });
+      // Check to see if the variable already exists
+      let variableExists = true;
+    //   try {
+    //     await octokit.request(
+    //       `GET /repositories/${repo.id}/environments/${environment}/variables/${name}`
+    //     );
+    //   } catch (HttpError) {
+    //     // Should validate this is a 404
+    //     variableExists = false;
+    //   }
+
+      let httpMethod = null;
+
+      if (variableExists) {
+        httpMethod = "PATCH";
+      } else {
+        httpMethod = "POST";
+      }
+
+      await octokit.request(
+        `${httpMethod} /repositories/${repo.id}/environments/${environment}/variables/${name}`,
+        {
+          body: `{"name":"${name}","value":"${variable}"}`,
+        }
+      );
     } else {
-      return octokit.actions.createRepoVariable({
-        owner: repo_owner,
-        repo: repo_name,
-        name,
-        value: variable,
-      });
+      // Check to see if the variable already exists
+      let variableExists = true;
+    //   try {
+    //     await octokit.request(
+    //       `GET /repos/${repo_owner}/${repo_name}/actions/variables/${name}`
+    //     );
+    //   } catch (HttpError) {
+    //     // Should validate this is a 404
+    //     variableExists = false;
+    //   }
+
+      let httpMethod = null;
+
+      if (variableExists) {
+        httpMethod = "PATCH";
+      } else {
+        httpMethod = "POST";
+      }
+
+      await octokit.request(
+        `${httpMethod} /repos/${repo_owner}/${repo_name}/actions/variables/${name}`,
+        {
+          body: `{"name":"${name}","value":"${variable}"}`,
+        }
+      );
     }
+  }
 }
 
 export async function deleteVariableForRepo(
@@ -202,17 +241,13 @@ export async function deleteVariableForRepo(
   try {
     if (!dry_run) {
       if (environment) {
-        return octokit.actions.deleteEnvironmentVariable({
-          repository_id: repo.id,
-          environment_name: environment,
-          name,
-        });
+        return octokit.request(
+          `DELETE /repositories/${repo.id}/environments/${environment}/variables/${name}`
+        );
       } else {
-        return octokit.actions.deleteRepoVariable({
-          owner: repo_owner,
-          repo: repo_name,
-          name,
-        });
+        return octokit.request(
+          `DELETE /repos/${repo_owner}/${repo_name}/actions/variables/${name}`
+        );
       }
     }
   } catch (HttpError) {

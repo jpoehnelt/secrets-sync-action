@@ -27,7 +27,7 @@ nock.disableNetConnect();
 
 beforeEach(() => {});
 
-test("run should succeed with a repo and secret", async () => {
+test("run should succeed with a repo and variable", async () => {
   (github.listAllMatchingRepos as jest.Mock) = jest
     .fn()
     .mockImplementation(async () => [fixture[0].response]);
@@ -60,7 +60,7 @@ test("run should succeed with a repo and secret", async () => {
   expect(process.exitCode).toBe(undefined);
 });
 
-test("run should succeed with a repo and secret with repository_list_regex as false", async () => {
+test("run should succeed with a repo and variable with repository_list_regex as false", async () => {
   (github.getRepos as jest.Mock) = jest
     .fn()
     .mockImplementation(async () => [fixture[0].response]);
@@ -92,7 +92,7 @@ test("run should succeed with a repo and secret with repository_list_regex as fa
   expect(process.exitCode).toBe(undefined);
 });
 
-test("run should succeed with delete enabled, a repo and secret with repository_list_regex as false", async () => {
+test("run should succeed with delete enabled, a repo and variable with repository_list_regex as false", async () => {
   (github.deleteVariableForRepo as jest.Mock) = jest
     .fn()
     .mockImplementation(async () => null);
@@ -113,29 +113,3 @@ test("run should succeed with delete enabled, a repo and secret with repository_
   expect(process.exitCode).toBe(undefined);
 });
 
-test("run should fail if target is not supported", async () => {
-  (github.getRepos as jest.Mock) = jest
-    .fn()
-    .mockImplementation(async () => [fixture[0].response]);
-
-  (github.setVariableForRepo as jest.Mock) = jest
-    .fn()
-    .mockImplementation(async () => null);
-
-  (variables.getVariables as jest.Mock) = jest.fn().mockReturnValue({
-    BAZ: "bar",
-  });
-
-  (config.getConfig as jest.Mock) = jest.fn().mockReturnValue({
-    GITHUB_TOKEN: "token",
-    SECRETS: ["BAZ"],
-    REPOSITORIES: [fixture[0].response.full_name],
-    REPOSITORIES_LIST_REGEX: false,
-    DRY_RUN: false,
-    CONCURRENCY: 1,
-    TARGET: "invalid",
-  });
-  await run();
-
-  expect(process.exitCode).toBe(1);
-});
