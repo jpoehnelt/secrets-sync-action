@@ -25,7 +25,7 @@ function clearInputs() {
 }
 
 describe("getConfig", () => {
-  const SECRETS = ["FOO.*", "^BAR$"];
+  const VARIABLES = ["FOO.*", "^BAR$"];
   const REPOSITORIES = ["google/baz.*", "^google/foo$"];
   const REPOSITORIES_LIST_REGEX = true;
   const GITHUB_API_URL = "https://api.github.com";
@@ -42,7 +42,7 @@ describe("getConfig", () => {
   interface Inputs {
     INPUT_GITHUB_API_URL?: string;
     INPUT_GITHUB_TOKEN: string;
-    INPUT_SECRETS: string;
+    INPUT_VARIABLES: string;
     INPUT_REPOSITORIES: string;
     INPUT_REPOSITORIES_LIST_REGEX: string;
     INPUT_DRY_RUN: string;
@@ -55,7 +55,7 @@ describe("getConfig", () => {
   const inputs: Inputs = {
     INPUT_GITHUB_API_URL: String(GITHUB_API_URL),
     INPUT_GITHUB_TOKEN: GITHUB_TOKEN,
-    INPUT_SECRETS: SECRETS.join("\n"),
+    INPUT_VARIABLES: VARIABLES.join("\n"),
     INPUT_REPOSITORIES: REPOSITORIES.join("\n"),
     INPUT_REPOSITORIES_LIST_REGEX: String(REPOSITORIES_LIST_REGEX),
     INPUT_DRY_RUN: String(DRY_RUN),
@@ -84,7 +84,7 @@ describe("getConfig", () => {
     expect(getConfig()).toEqual({
       GITHUB_API_URL,
       GITHUB_TOKEN,
-      SECRETS,
+      VARIABLES,
       REPOSITORIES,
       REPOSITORIES_LIST_REGEX,
       DRY_RUN,

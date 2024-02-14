@@ -20,30 +20,24 @@ import {
   DefaultOctokit,
   Repository,
   listAllMatchingRepos,
-  setSecretForRepo,
-  deleteSecretForRepo,
+  setVariableForRepo,
+  deleteVariableForRepo,
   getRepos,
 } from "./github";
 
 import { getConfig } from "./config";
-import { getSecrets } from "./secrets";
+import { getVariables } from "./variables";
 import pLimit from "p-limit";
 
 export async function run(): Promise<void> {
   try {
     const config = getConfig();
-    const secrets = getSecrets(config.SECRETS);
+    const variables = getVariables(config.VARIABLES);
 
     /* istanbul ignore next */
-    if (!secrets) {
-      core.setFailed(`Secrets: no matches with "${config.SECRETS.join(", ")}"`);
-      return;
-    }
-
-    const allowedTargets = ["dependabot", "actions"];
-    if (!allowedTargets.some((x) => x === config.TARGET)) {
+    if (!variables) {
       core.setFailed(
-        `Target: Value not in supported targets: ${allowedTargets}`
+        `Variables: no matches with "${config.VARIABLES.join(", ")}"`
       );
       return;
     }
@@ -82,12 +76,11 @@ export async function run(): Promise<void> {
         {
           REPOSITORIES: config.REPOSITORIES,
           REPOSITORIES_LIST_REGEX: config.REPOSITORIES_LIST_REGEX,
-          SECRETS: config.SECRETS,
+          VARIABLES: config.VARIABLES,
           DRY_RUN: config.DRY_RUN,
           FOUND_REPOS: repoNames,
-          FOUND_SECRETS: Object.keys(secrets),
+          FOUND_VARIABLES: Object.keys(variables),
           ENVIRONMENT: config.ENVIRONMENT,
-          TARGET: config.TARGET,
         },
         null,
         2
@@ -97,24 +90,33 @@ export async function run(): Promise<void> {
     const limit = pLimit(config.CONCURRENCY);
     const calls: Promise<void>[] = [];
     for (const repo of repos) {
-      for (const k of Object.keys(secrets)) {
-        const action = config.RUN_DELETE
-          ? deleteSecretForRepo
-          : setSecretForRepo;
-
-        calls.push(
-          limit(() =>
-            action(
-              octokit,
-              k,
-              secrets[k],
-              repo,
-              config.ENVIRONMENT,
-              config.DRY_RUN,
-              config.TARGET
+      for (const k of Object.keys(variables)) {
+        if (config.RUN_DELETE) {
+          calls.push(
+            limit(() =>
+              deleteVariableForRepo(
+                octokit,
+                k,
+                repo,
+                config.ENVIRONMENT,
+                config.DRY_RUN
+              )
             )
-          )
-        );
+          );
+        } else {
+          calls.push(
+            limit(() =>
+              setVariableForRepo(
+                octokit,
+                k,
+                variables[k],
+                repo,
+                config.ENVIRONMENT,
+                config.DRY_RUN
+              )
+            )
+          );
+        }
       }
     }
     await Promise.all(calls);

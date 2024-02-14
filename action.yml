@@ -62,11 +62,6 @@ inputs:
       If this value is set, the action will set the secrets to the repositories environment with the name of this value. 
       Only works if `target` is set to `actions` (default).
     required: false
-  target:
-    description: |
-      Target where secrets should be stored: `actions` (default) or `dependabot`.
-    default: "actions"
-    required: false
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'

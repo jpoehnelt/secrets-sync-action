@@ -16,7 +16,7 @@
 
 import * as core from "@actions/core";
 
-import { getSecrets } from "../src/secrets";
+import { getVariables } from "../src/variables";
 
 const setSecretMock: jest.Mock = jest.fn();
 
@@ -27,32 +27,32 @@ beforeAll(() => {
 
 test("getSecrets matches with regex", async () => {
   const env = { FOO: "BAR" };
-  expect(getSecrets(["FO*"], env)).toEqual(env);
+  expect(getVariables(["FO*"], env)).toEqual(env);
 });
 
 test("getSecrets matches multiple keys with regex", async () => {
   const env = { FOO: "BAR", FOOO: "BAR" };
-  expect(getSecrets(["FO*"], env)).toEqual(env);
+  expect(getVariables(["FO*"], env)).toEqual(env);
 });
 
 test("getSecrets matches multiple keys with multiple regexs", async () => {
   const env = { FOO: "BAR", QUZ: "BAR" };
-  expect(getSecrets(["FOO", "Q.*"], env)).toEqual(env);
+  expect(getVariables(["FOO", "Q.*"], env)).toEqual(env);
 });
 
 test("getSecrets regex does not use case insensitive flag", async () => {
   const env = { FOO: "BAR" };
-  expect(getSecrets(["fo+"], env)).toEqual({});
+  expect(getVariables(["fo+"], env)).toEqual({});
 });
 
 test("getSecrets empty pattern returns no keys", async () => {
   const env = { FOO: "BAR" };
-  expect(getSecrets([], env)).toEqual({});
+  expect(getVariables([], env)).toEqual({});
 });
 
 test("getSecrets using process.env", async () => {
   process.env.FOO = "bar";
-  expect(getSecrets([".*"]).FOO).toEqual(process.env.FOO);
+  expect(getVariables([".*"]).FOO).toEqual(process.env.FOO);
   delete process.env.FOO;
 });
 
@@ -60,7 +60,7 @@ test("getSecrets does not add mask to GITHUB_", async () => {
   const env = { FOO: "BAR", GITHUB_FOO: "GITHUB_BAR" };
 
   setSecretMock.mockClear();
-  getSecrets([".*"], env);
+  getVariables([".*"], env);
 
   expect((core.setSecret as jest.Mock).mock.calls.length).toBe(1);
   expect((core.setSecret as jest.Mock).mock.calls[0][0]).toBe(env.FOO);

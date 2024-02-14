@@ -17,11 +17,11 @@
 import * as core from "@actions/core";
 
 /**
- * Get Secrets from the current environment using patterns to match keys.
+ * Get Variables from the current environment using patterns to match keys.
  * @param patterns
  * @param env
  */
-export function getSecrets(
+export function getVariables(
   patterns: string[],
   env: NodeJS.ProcessEnv = process.env
 ): { [key: string]: string } {

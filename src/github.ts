@@ -17,7 +17,6 @@
 import * as core from "@actions/core";
 
 import { Octokit } from "@octokit/rest";
-import { encrypt } from "./utils";
 import { getConfig } from "./config";
 import { retry } from "@octokit/plugin-retry";
 
@@ -160,139 +159,60 @@ export function filterReposByPatterns(
   );
 }
 
-export async function getPublicKey(
-  octokit: any,
-  repo: Repository,
-  environment: string,
-  target: string
-): Promise<PublicKey> {
-  let publicKey = publicKeyCache.get(repo);
-
-  if (!publicKey) {
-    if (environment) {
-      publicKey = (
-        await octokit.actions.getEnvironmentPublicKey({
-          repository_id: repo.id,
-          environment_name: environment,
-        })
-      ).data as PublicKey;
-
-      publicKeyCache.set(repo, publicKey);
-
-      return publicKey;
-    } else {
-      const [owner, name] = repo.full_name.split("/");
-
-      switch (target) {
-        case "dependabot":
-          publicKey = (
-            await octokit.dependabot.getRepoPublicKey({
-              owner,
-              repo: name,
-            })
-          ).data as PublicKey;
-
-          publicKeyCache.set(repo, publicKey);
-
-          return publicKey;
-        case "actions":
-        default:
-          publicKey = (
-            await octokit.actions.getRepoPublicKey({
-              owner,
-              repo: name,
-            })
-          ).data as PublicKey;
-
-          publicKeyCache.set(repo, publicKey);
-
-          return publicKey;
-      }
-    }
-  }
-
-  return publicKey;
-}
-
-export async function setSecretForRepo(
+export async function setVariableForRepo(
   octokit: any,
   name: string,
-  secret: string,
+  variable: string,
   repo: Repository,
   environment: string,
-  dry_run: boolean,
-  target: string
+  dry_run: boolean
 ): Promise<void> {
   const [repo_owner, repo_name] = repo.full_name.split("/");
 
-  const publicKey = await getPublicKey(octokit, repo, environment, target);
-  const encrypted_value = encrypt(secret, publicKey.key);
+  core.info(`Set \`${name} = ${variable} on ${repo.full_name}`);
 
-  core.info(`Set \`${name} = ***\` on ${repo.full_name}`);
-
-  if (!dry_run) {
-    switch (target) {
-      case "dependabot":
-        return octokit.dependabot.createOrUpdateRepoSecret({
-          owner: repo_owner,
-          repo: repo_name,
-          secret_name: name,
-          key_id: publicKey.key_id,
-          encrypted_value,
-        });
-      case "actions":
-      default:
-        if (environment) {
-          return octokit.actions.createOrUpdateEnvironmentSecret({
-            repository_id: repo.id,
-            environment_name: environment,
-            secret_name: name,
-            key_id: publicKey.key_id,
-            encrypted_value,
-          });
-        } else {
-          return octokit.actions.createOrUpdateRepoSecret({
-            owner: repo_owner,
-            repo: repo_name,
-            secret_name: name,
-            key_id: publicKey.key_id,
-            encrypted_value,
-          });
-        }
+  if (!dry_run)
+    if (environment) {
+      return octokit.actions.createEnvironmentVariable({
+        repository_id: repo.id,
+        environment_name: environment,
+        name,
+        value: variable,
+      });
+    } else {
+      return octokit.actions.createRepoVariable({
+        owner: repo_owner,
+        repo: repo_name,
+        name,
+        value: variable,
+      });
     }
-  }
 }
 
-export async function deleteSecretForRepo(
+export async function deleteVariableForRepo(
   octokit: any,
   name: string,
-  secret: string,
   repo: Repository,
   environment: string,
-  dry_run: boolean,
-  target: string
+  dry_run: boolean
 ): Promise<void> {
+  const [repo_owner, repo_name] = repo.full_name.split("/");
   core.info(`Remove ${name} from ${repo.full_name}`);
 
   try {
     if (!dry_run) {
-      const action = "DELETE";
-      switch (target) {
-        case "dependabot":
-          return octokit.request(
-            `${action} /repos/${repo.full_name}/dependabot/secrets/${name}`
-          );
-        case "actions":
-        default:
-          if (environment) {
-            return octokit.request(
-              `${action} /repositories/${repo.id}/environments/${environment}/secrets/${name}`
-            );
-          } else {
-            return octokit.request(
-              `${action} /repos/${repo.full_name}/actions/secrets/${name}`
-            );
-          }
+      if (environment) {
+        return octokit.actions.deleteEnvironmentVariable({
+          repository_id: repo.id,
+          environment_name: environment,
+          name,
+        });
+      } else {
+        return octokit.actions.deleteRepoVariable({
+          owner: repo_owner,
+          repo: repo_name,
+          name,
+        });
       }
     }
   } catch (HttpError) {

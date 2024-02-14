@@ -19,7 +19,7 @@ import * as core from "@actions/core";
 export interface Config {
   GITHUB_API_URL: string;
   GITHUB_TOKEN: string;
-  SECRETS: string[];
+  VARIABLES: string[];
   REPOSITORIES: string[];
   REPOSITORIES_LIST_REGEX: boolean;
   DRY_RUN: boolean;
@@ -39,7 +39,7 @@ export function getConfig(): Config {
     GITHUB_TOKEN: core.getInput("GITHUB_TOKEN", { required: true }),
     CONCURRENCY: Number(core.getInput("CONCURRENCY")),
     RETRIES: Number(core.getInput("RETRIES")),
-    SECRETS: core.getInput("SECRETS", { required: true }).split("\n"),
+    VARIABLES: core.getInput("VARIABLES", { required: true }).split("\n"),
     REPOSITORIES: core.getInput("REPOSITORIES", { required: true }).split("\n"),
     REPOSITORIES_LIST_REGEX: ["1", "true"].includes(
       core
