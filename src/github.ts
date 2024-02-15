@@ -182,8 +182,7 @@ export async function setVariableForRepo(
       } catch (error: any) {
         if (error.status === 404) {
           variableExists = false;
-        } else if (error.status !== 404) {
-          console.error(error);
+        } else {
           throw error;
         }
       }
@@ -215,8 +214,7 @@ export async function setVariableForRepo(
       } catch (error: any) {
         if (error.status === 404) {
           variableExists = false;
-        } else if (error.status !== 404) {
-          console.error(error);
+        } else {
           throw error;
         }
       }
@@ -229,19 +227,15 @@ export async function setVariableForRepo(
         httpMethod = "POST";
       }
 
-      try {
-        await octokit.request(
-          `${httpMethod} /repos/${repo_owner}/${repo_name}/actions/variables/${name}`,
-          {
-            data: JSON.stringify({
-              name,
-              value: variable,
-            }),
-          }
-        );
-      } catch (error) {
-        console.error(error);
-      }
+      await octokit.request(
+        `${httpMethod} /repos/${repo_owner}/${repo_name}/actions/variables/${name}`,
+        {
+          data: JSON.stringify({
+            name,
+            value: variable,
+          }),
+        }
+      );
     }
   }
 }

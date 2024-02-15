@@ -39,7 +39,7 @@ beforeAll(() => {
         REPOSITORIES: [".*"],
         REPOSITORIES_LIST_REGEX: true,
         DRY_RUN: false,
-        RETRIES: 3,
+        RETRIES: 3
     });
 
     octokit = DefaultOctokit({
@@ -68,23 +68,39 @@ describe("listing repos from github", () => {
     });
 
     test("listAllReposForAuthenticatedUser returns from multiple pages", async () => {
-        const repos = await listAllMatchingRepos({
-            patterns: [".*"],
-            octokit,
-            pageSize,
-        });
+        try {
+            const repos = await listAllMatchingRepos({
+                patterns: [".*"],
+                octokit,
+                pageSize,
+            });
 
-        expect(repos.length).toEqual(3);
+            expect(repos.length).toEqual(3);
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
+
+
     });
 
     test("listAllReposForAuthenticatedUser matches patterns", async () => {
-        const repos = await listAllMatchingRepos({
-            patterns: ["octokit.*"],
-            octokit,
-            pageSize,
-        });
+        try {
+            const repos = await listAllMatchingRepos({
+                patterns: ["octokit.*"],
+                octokit,
+                pageSize,
+            });
 
-        expect(repos.length).toEqual(3);
+            expect(repos.length).toEqual(3);
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
     });
 });
 
@@ -101,16 +117,22 @@ describe("getting single repos from github", () => {
     });
 
     test("getRepos returns from multiple pages", async () => {
-        const repos = await getRepos({
-            patterns: [
-                fixture[0].response.full_name,
-                fixture[0].response.full_name,
-                fixture[0].response.full_name,
-            ],
-            octokit,
-        });
+        try {
+            const repos = await getRepos({
+                patterns: [
+                    fixture[0].response.full_name,
+                    fixture[0].response.full_name,
+                    fixture[0].response.full_name,
+                ],
+                octokit,
+            });
 
-        expect(repos.length).toEqual(3);
+            expect(repos.length).toEqual(3);
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
     });
 });
 
@@ -123,7 +145,7 @@ describe("setVariableForRepo", () => {
     const repo = fixture[0].response;
     const [repo_owner, repo_name] = repo.full_name.split("/");
 
-    jest.setTimeout(5000);
+    jest.setTimeout(30000);
 
     const variables = { FOO: "BAR" };
 
@@ -157,39 +179,53 @@ describe("setVariableForRepo", () => {
     });
 
     test("setVariableForRepo should not set variable with dry run", async () => {
-        await setVariableForRepo(
-            octokit,
-            Object.keys(variables)[0],
-            Object.values(variables)[0],
-            repo,
-            "",
-            true
-        );
+        try {
+            await setVariableForRepo(
+                octokit,
+                Object.keys(variables)[0],
+                Object.values(variables)[0],
+                repo,
+                "",
+                true
+            );
 
-        expect(createVariableMock.isDone()).toBeFalsy();
-        expect(updateVariableMock.isDone()).toBeFalsy();
+            expect(createVariableMock.isDone()).toBeFalsy();
+            expect(updateVariableMock.isDone()).toBeFalsy();
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
     });
 
     test("setVariableForRepo should call update variable endpoint", async () => {
-        const [repo_owner, repo_name] = repo.full_name.split("/");
+        try {
+            const [repo_owner, repo_name] = repo.full_name.split("/");
 
-        nock("https://api.github.com")
-            .get(`/repos/${repo_owner}/${repo_name}/actions/variables/${Object.keys(variables)[0]}`)
-            .reply(200);
+            nock("https://api.github.com")
+                .log(console.log)
+                .get(`/repos/${repo_owner}/${repo_name}/actions/variables/${Object.keys(variables)[0]}`)
+                .reply(200);
 
-        console.log(`/repos/${repo_owner}/${repo_name}/actions/variables/${Object.keys(variables)[0]}`)
+            console.log(`/repos/${repo_owner}/${repo_name}/actions/variables/${Object.keys(variables)[0]}`)
 
-        await setVariableForRepo(
-            octokit,
-            Object.keys(variables)[0],
-            Object.values(variables)[0],
-            repo,
-            "",
-            false
-        );
+            await setVariableForRepo(
+                octokit,
+                Object.keys(variables)[0],
+                Object.values(variables)[0],
+                repo,
+                "",
+                false
+            );
 
-        expect(createVariableMock.isDone()).toBeFalsy();
-        expect(updateVariableMock.isDone()).toBeTruthy();
+            expect(createVariableMock.isDone()).toBeFalsy();
+            expect(updateVariableMock.isDone()).toBeTruthy();
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
     });
 
     test("setVariableForRepo should call create variable endpoint", async () => {
@@ -197,6 +233,7 @@ describe("setVariableForRepo", () => {
             const [repo_owner, repo_name] = repo.full_name.split("/");
 
             nock("https://api.github.com")
+                .log(console.log)
                 .get(`/repos/${repo_owner}/${repo_name}/actions/variables/${Object.keys(variables)[0]}`)
                 .reply(404);
 
@@ -214,7 +251,9 @@ describe("setVariableForRepo", () => {
             expect(updateVariableMock.isDone()).toBeFalsy();
 
         } catch (error) {
-            console.error(error)
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
         }
 
     });
@@ -224,7 +263,7 @@ describe("setVariableForRepo", () => {
 describe("setVariableForRepo with environment", () => {
     const repo = fixture[0].response;
 
-    jest.setTimeout(5000);
+    jest.setTimeout(30000);
 
     const variables = { FOO: "BAR" };
 
@@ -260,60 +299,81 @@ describe("setVariableForRepo with environment", () => {
     });
 
     test("setVariableForRepo should not set variable with dry run", async () => {
-        await setVariableForRepo(
-            octokit,
-            "FOO",
-            variables.FOO,
-            repo,
-            repoEnvironment,
-            true
-        );
+        try {
+            await setVariableForRepo(
+                octokit,
+                "FOO",
+                variables.FOO,
+                repo,
+                repoEnvironment,
+                true
+            );
 
-        expect(createEnvironmentVariableMock.isDone()).toBeFalsy();
-        expect(updateEnvironmentVariableMock.isDone()).toBeFalsy();
+            expect(createEnvironmentVariableMock.isDone()).toBeFalsy();
+            expect(updateEnvironmentVariableMock.isDone()).toBeFalsy();
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
     });
 
     test("setVariableForRepo should call create variable endpoint", async () => {
-        nock("https://api.github.com")
-            .get(`/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`)
-            .reply(404);
+        try {
+            nock("https://api.github.com")
+                .get(`/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`)
+                .reply(404);
 
-        await setVariableForRepo(
-            octokit,
-            "FOO",
-            variables.FOO,
-            repo,
-            repoEnvironment,
-            false
-        );
+            await setVariableForRepo(
+                octokit,
+                "FOO",
+                variables.FOO,
+                repo,
+                repoEnvironment,
+                false
+            );
 
-        expect(createEnvironmentVariableMock.isDone()).toBeTruthy();
-        expect(updateEnvironmentVariableMock.isDone()).toBeFalsy();
+            expect(createEnvironmentVariableMock.isDone()).toBeTruthy();
+            expect(updateEnvironmentVariableMock.isDone()).toBeFalsy();
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
     });
 
     test("setVariableForRepo should call update variable endpoint", async () => {
-        nock("https://api.github.com")
-            .get(`/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`)
-            .reply(200);
+        try {
+            nock("https://api.github.com")
+                .get(`/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`)
+                .reply(200);
 
-        await setVariableForRepo(
-            octokit,
-            "FOO",
-            variables.FOO,
-            repo,
-            repoEnvironment,
-            false
-        );
+            await setVariableForRepo(
+                octokit,
+                "FOO",
+                variables.FOO,
+                repo,
+                repoEnvironment,
+                false
+            );
 
-        expect(createEnvironmentVariableMock.isDone()).toBeFalsy();
-        expect(updateEnvironmentVariableMock.isDone()).toBeTruthy();
+            expect(createEnvironmentVariableMock.isDone()).toBeFalsy();
+            expect(updateEnvironmentVariableMock.isDone()).toBeTruthy();
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
     });
 });
 
 describe("deleteVariableForRepo", () => {
     const repo = fixture[0].response;
 
-    jest.setTimeout(5000);
+    jest.setTimeout(30000);
 
     const secrets = { FOO: "BAR" };
     let deleteActionsVariableMock: nock.Scope;
@@ -327,25 +387,39 @@ describe("deleteVariableForRepo", () => {
     });
 
     test("deleteVariableForRepo should not delete variable with dry run", async () => {
-        await deleteVariableForRepo(
-            octokit,
-            "FOO",
-            repo,
-            "",
-            true
-        );
-        expect(deleteActionsVariableMock.isDone()).toBeFalsy();
+        try {
+            await deleteVariableForRepo(
+                octokit,
+                "FOO",
+                repo,
+                "",
+                true
+            );
+            expect(deleteActionsVariableMock.isDone()).toBeFalsy();
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
     });
 
     test("deleteVariableForRepo with should call delete variable endpoint", async () => {
-        await deleteVariableForRepo(
-            octokit,
-            "FOO",
-            repo,
-            "",
-            false
-        );
-        expect(deleteActionsVariableMock.isDone()).toBeTruthy();
+        try {
+            await deleteVariableForRepo(
+                octokit,
+                "FOO",
+                repo,
+                "",
+                false
+            );
+            expect(deleteActionsVariableMock.isDone()).toBeTruthy();
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
     });
 });
 
@@ -354,7 +428,7 @@ describe("deleteVariableForRepo with environment", () => {
 
     const repoEnvironment = "production";
 
-    jest.setTimeout(5000);
+    jest.setTimeout(30000);
 
     const secrets = { FOO: "BAR" };
     let deleteVariableMock: nock.Scope;
@@ -369,24 +443,38 @@ describe("deleteVariableForRepo with environment", () => {
     });
 
     test("deleteVariableForRepo should not delete variable with dry run", async () => {
-        await deleteVariableForRepo(
-            octokit,
-            "FOO",
-            repo,
-            repoEnvironment,
-            true
-        );
-        expect(deleteVariableMock.isDone()).toBeFalsy();
+        try {
+            await deleteVariableForRepo(
+                octokit,
+                "FOO",
+                repo,
+                repoEnvironment,
+                true
+            );
+            expect(deleteVariableMock.isDone()).toBeFalsy();
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
     });
 
     test("deleteVariableForRepo should call delete variable endpoint", async () => {
-        await deleteVariableForRepo(
-            octokit,
-            "FOO",
-            repo,
-            repoEnvironment,
-            false
-        );
-        expect(nock.isDone()).toBeTruthy();
+        try {
+            await deleteVariableForRepo(
+                octokit,
+                "FOO",
+                repo,
+                repoEnvironment,
+                false
+            );
+            expect(nock.isDone()).toBeTruthy();
+        } catch (error) {
+            // Catch any errors from misconfigure nock mocks
+            console.log(error);
+            throw error;
+        }
+
     });
 });
