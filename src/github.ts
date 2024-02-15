@@ -179,11 +179,14 @@ export async function setVariableForRepo(
         await octokit.request(
           `GET /repositories/${repo.id}/environments/${environment}/variables/${name}`
         );
-      } catch (HttpError) {
-        // Should validate this is a 404
-        variableExists = false;
+      } catch (error: any) {
+        if (error.status === 404) {
+          variableExists = false;
+        } else if (error.status !== 404) {
+          console.error(error);
+          throw error;
+        }
       }
-
       let httpMethod = null;
 
       if (variableExists) {
@@ -203,18 +206,20 @@ export async function setVariableForRepo(
       );
     } else {
       // Check to see if the variable already exists
-      console.log('before get')
       let variableExists = true;
+
       try {
         await octokit.request(
           `GET /repos/${repo_owner}/${repo_name}/actions/variables/${name}`
         );
-      } catch (HttpError) {
-        // Should validate this is a 404
-        variableExists = false;
+      } catch (error: any) {
+        if (error.status === 404) {
+          variableExists = false;
+        } else if (error.status !== 404) {
+          console.error(error);
+          throw error;
+        }
       }
-
-      console.log('after get');
 
       let httpMethod = null;
 
@@ -224,17 +229,23 @@ export async function setVariableForRepo(
         httpMethod = "POST";
       }
 
-      console.log(httpMethod);
+      console.log("about to update repo var");
 
-      await octokit.request(
-        `${httpMethod} /repos/${repo_owner}/${repo_name}/actions/variables/${name}`,
-        {
-          data: JSON.stringify({
-            name,
-            value: variable,
-          }),
-        }
-      );
+      try {
+        await octokit.request(
+          `${httpMethod} /repos/${repo_owner}/${repo_name}/actions/variables/${name}`,
+          {
+            data: JSON.stringify({
+              name,
+              value: variable,
+            }),
+          }
+        );
+      } catch (error) {
+        console.error(error);
+      }
+
+      console.log("donezo");
     }
   }
 }
