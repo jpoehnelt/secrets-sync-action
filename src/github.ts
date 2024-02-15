@@ -175,14 +175,14 @@ export async function setVariableForRepo(
     if (environment) {
       // Check to see if the variable already exists
       let variableExists = true;
-    //   try {
-    //     await octokit.request(
-    //       `GET /repositories/${repo.id}/environments/${environment}/variables/${name}`
-    //     );
-    //   } catch (HttpError) {
-    //     // Should validate this is a 404
-    //     variableExists = false;
-    //   }
+      try {
+        await octokit.request(
+          `GET /repositories/${repo.id}/environments/${environment}/variables/${name}`
+        );
+      } catch (HttpError) {
+        // Should validate this is a 404
+        variableExists = false;
+      }
 
       let httpMethod = null;
 
@@ -195,20 +195,26 @@ export async function setVariableForRepo(
       await octokit.request(
         `${httpMethod} /repositories/${repo.id}/environments/${environment}/variables/${name}`,
         {
-          body: `{"name":"${name}","value":"${variable}"}`,
+          data: JSON.stringify({
+            name,
+            value: variable,
+          }),
         }
       );
     } else {
       // Check to see if the variable already exists
+      console.log('before get')
       let variableExists = true;
-    //   try {
-    //     await octokit.request(
-    //       `GET /repos/${repo_owner}/${repo_name}/actions/variables/${name}`
-    //     );
-    //   } catch (HttpError) {
-    //     // Should validate this is a 404
-    //     variableExists = false;
-    //   }
+      try {
+        await octokit.request(
+          `GET /repos/${repo_owner}/${repo_name}/actions/variables/${name}`
+        );
+      } catch (HttpError) {
+        // Should validate this is a 404
+        variableExists = false;
+      }
+
+      console.log('after get');
 
       let httpMethod = null;
 
@@ -218,10 +224,15 @@ export async function setVariableForRepo(
         httpMethod = "POST";
       }
 
+      console.log(httpMethod);
+
       await octokit.request(
         `${httpMethod} /repos/${repo_owner}/${repo_name}/actions/variables/${name}`,
         {
-          body: `{"name":"${name}","value":"${variable}"}`,
+          data: JSON.stringify({
+            name,
+            value: variable,
+          }),
         }
       );
     }

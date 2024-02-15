@@ -120,186 +120,181 @@ test("filterReposByPatterns matches patterns", async () => {
   expect(filterReposByPatterns([fixture[0].response], ["nope"]).length).toBe(0);
 });
 
-// describe("setVariableForRepo", () => {
-//   const repo = fixture[0].response;
+describe("setVariableForRepo", () => {
+  const repo = fixture[0].response;
 
-//   jest.setTimeout(5000);
+  jest.setTimeout(5000);
 
-//   const variables = { FOO: "BAR" };
+  const variables = { FOO: "BAR" };
 
-//   let createVariableMock: nock.Scope;
-//   let updateVariableMock: nock.Scope;
-//   let getVariableMock: nock.Scope;
+  let createVariableMock: nock.Scope;
+  let updateVariableMock: nock.Scope;
 
-//   beforeEach(() => {
-//     nock.cleanAll();
+  beforeEach(() => {
+    nock.cleanAll();
 
-//     createVariableMock = nock("https://api.github.com")
-//     .post(
-//       `/repos/${repo.owner}/${repo.name}/actions/variables/FOO`,
-//       (body) => {
-//         expect(body.name).toBe(Object.keys(variables)[0]);
-//         expect(body.value).toBe(Object.values(variables)[0]);
-//         return body;
-//       }
-//     )
-//     .reply(200);
+    createVariableMock = nock("https://api.github.com")
+    .post(
+      `/repos/${repo.owner}/${repo.name}/actions/variables/${Object.keys(variables)[0]}`,
+      (body) => {
+        expect(body.name).toBe(Object.keys(variables)[0]);
+        expect(body.value).toBe(Object.values(variables)[0]);
+        return body;
+      }
+    )
+    .reply(200);
 
-//     updateVariableMock = nock("https://api.github.com")
-//     .patch(
-//       `/repos/${repo.owner}/${repo.name}/actions/variables/FOO`,
-//       (body) => {
-//           expect(body.name).toBe(Object.keys(variables)[0]);
-//           expect(body.value).toBe(Object.values(variables)[0]);
-//         return body;
-//       }
-//     )
-//     .reply(200);
+    updateVariableMock = nock("https://api.github.com")
+    .patch(
+      `/repos/${repo.owner}/${repo.name}/actions/variables/${Object.keys(variables)[0]}`,
+      (body) => {
+          expect(body.name).toBe(Object.keys(variables)[0]);
+          expect(body.value).toBe(Object.values(variables)[0]);
+        return body;
+      }
+    )
+    .reply(200);
+  });
 
-//     getVariableMock = nock("https://api.github.com")
-//     .get(`/repos/${repo.owner}/${repo.name}/actions/variables/${Object.keys(variables)[0]}`)
-//     .reply(200);
-//   });
+  test("setVariableForRepo should not set variable with dry run", async () => {
+    await setVariableForRepo(
+      octokit,
+      Object.keys(variables)[0],
+      Object.values(variables)[0],
+      repo,
+      "",
+      true
+    );
 
-//   test("setVariableForRepo should not set variable with dry run", async () => {
-//     await setVariableForRepo(
-//       octokit,
-//       Object.keys(variables)[0],
-//       Object.values(variables)[0],
-//       repo,
-//       "",
-//       true
-//     );
+    expect(createVariableMock.isDone()).toBeFalsy();
+    expect(updateVariableMock.isDone()).toBeFalsy();
+  });
 
-//     expect(createVariableMock.isDone()).toBeFalsy();
-//     expect(updateVariableMock.isDone()).toBeFalsy();
-//   });
+  test("setVariableForRepo should call update variable endpoint", async () => {
+    nock("https://api.github.com")
+    .get(`/repos/${repo.owner}/${repo.name}/actions/variables/${Object.keys(variables)[0]}`)
+    .reply(200);
 
-//   test("setVariableForRepo should call update variable endpoint", async () => {
-//     // getVariableMock = nock("https://api.github.com")
-//     // .get(`/repos/${repo.owner}/${repo.name}/actions/variables/${Object.keys(variables)[0]}`)
-//     // .reply(200);
+    await setVariableForRepo(
+      octokit,
+      Object.keys(variables)[0],
+      Object.values(variables)[0],
+      repo,
+      "",
+      false
+    );
 
-//     await setVariableForRepo(
-//       octokit,
-//       Object.keys(variables)[0],
-//       Object.values(variables)[0],
-//       repo,
-//       "",
-//       false
-//     );
+    expect(createVariableMock.isDone()).toBeFalsy();
+    expect(updateVariableMock.isDone()).toBeTruthy();
+  });
 
-//     expect(createVariableMock.isDone()).toBeFalsy();
-//     expect(updateVariableMock.isDone()).toBeTruthy();
-//   });
+  test("setVariableForRepo should call create variable endpoint", async () => {
+    nock("https://api.github.com")
+    .get(`/repos/${repo.owner}/${repo.name}/actions/variables/${Object.keys(variables)[0]}`)
+    .reply(404);
 
-//   test("setVariableForRepo should call create variable endpoint", async () => {
-//     // getVariableMock = nock("https://api.github.com")
-//     // .get(`/repos/${repo.owner}/${repo.name}/actions/variables/${Object.keys(variables)[0]}`)
-//     // .reply(404);
+    await setVariableForRepo(
+      octokit,
+      Object.keys(variables)[0],
+      Object.values(variables)[0],
+      repo,
+      "",
+      false
+    );
 
-//     await setVariableForRepo(
-//       octokit,
-//       Object.keys(variables)[0],
-//       Object.values(variables)[0],
-//       repo,
-//       "",
-//       false
-//     );
+    expect(createVariableMock.isDone()).toBeTruthy();
+    expect(updateVariableMock.isDone()).toBeFalsy();
+  });
+});
 
-//     expect(createVariableMock.isDone()).toBeTruthy();
-//     expect(updateVariableMock.isDone()).toBeFalsy();
-//   });
-// });
+describe("setVariableForRepo with environment", () => {
+  const repo = fixture[0].response;
 
-// describe("setVariableForRepo with environment", () => {
-//   const repo = fixture[0].response;
+  jest.setTimeout(5000);
 
-//   jest.setTimeout(5000);
+  const variables = { FOO: "BAR" };
 
-//   const variables = { FOO: "BAR" };
+  const repoEnvironment = "production";
 
-//   const repoEnvironment = "production";
+  let createEnvironmentVariableMock: nock.Scope;
+  let updateEnvironmentVariableMock: nock.Scope;
 
-//   let createEnvironmentVariableMock: nock.Scope;
-//   let updateEnvironmentVariableMock: nock.Scope;
+  beforeEach(() => {
+    nock.cleanAll();
 
-//   beforeEach(() => {
-//     nock.cleanAll();
+    createEnvironmentVariableMock = nock("https://api.github.com")
+      .post(
+        `/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`,
+        (body) => {
+          expect(body.name).toBe(Object.keys(variables)[0]);
+          expect(body.value).toBe(Object.values(variables)[0]);
+          return body;
+        }
+      )
+      .reply(200);
 
-//     createEnvironmentVariableMock = nock("https://api.github.com")
-//       .post(
-//         `/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`,
-//         (body) => {
-//           expect(body.name).toBe(Object.keys(variables)[0]);
-//           expect(body.value).toBe(Object.values(variables)[0]);
-//           return body;
-//         }
-//       )
-//       .reply(200);
+      updateEnvironmentVariableMock = nock("https://api.github.com")
+      .patch(
+        `/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`,
+        (body) => {
+            expect(body.name).toBe(Object.keys(variables)[0]);
+            expect(body.value).toBe(Object.values(variables)[0]);
+          return body;
+        }
+      )
+      .reply(200);
+  });
 
-//       updateEnvironmentVariableMock = nock("https://api.github.com")
-//       .patch(
-//         `/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`,
-//         (body) => {
-//             expect(body.name).toBe(Object.keys(variables)[0]);
-//             expect(body.value).toBe(Object.values(variables)[0]);
-//           return body;
-//         }
-//       )
-//       .reply(200);
-//   });
+  test("setVariableForRepo should not set variable with dry run", async () => {
+    await setVariableForRepo(
+      octokit,
+      "FOO",
+      variables.FOO,
+      repo,
+      repoEnvironment,
+      true
+    );
 
-//   test("setVariableForRepo should not set variable with dry run", async () => {
-//     await setVariableForRepo(
-//       octokit,
-//       "FOO",
-//       variables.FOO,
-//       repo,
-//       repoEnvironment,
-//       true
-//     );
+    expect(createEnvironmentVariableMock.isDone()).toBeFalsy();
+    expect(updateEnvironmentVariableMock.isDone()).toBeFalsy();
+  });
 
-//     expect(createEnvironmentVariableMock.isDone()).toBeFalsy();
-//     expect(updateEnvironmentVariableMock.isDone()).toBeFalsy();
-//   });
+  test("setVariableForRepo should call create variable endpoint", async () => {
+    nock("https://api.github.com")
+    .get(`/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`)
+    .reply(404);
 
-//   test("setVariableForRepo should call create variable endpoint", async () => {
-//     const getEnvironmentVariableMock = nock("https://api.github.com")
-//     .get(`/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`)
-//     .reply(404);
+    await setVariableForRepo(
+      octokit,
+      "FOO",
+      variables.FOO,
+      repo,
+      repoEnvironment,
+      false
+    );
 
-//     await setVariableForRepo(
-//       octokit,
-//       "FOO",
-//       variables.FOO,
-//       repo,
-//       repoEnvironment,
-//       false
-//     );
+    expect(createEnvironmentVariableMock.isDone()).toBeTruthy();
+    expect(updateEnvironmentVariableMock.isDone()).toBeFalsy();
+  });
 
-//     expect(createEnvironmentVariableMock.isDone()).toBeTruthy();
-//     expect(updateEnvironmentVariableMock.isDone()).toBeFalsy();
-//   });
+  test("setVariableForRepo should call update variable endpoint", async () => {
+    nock("https://api.github.com")
+    .get(`/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`)
+    .reply(200);
 
-//   test("setVariableForRepo should call update variable endpoint", async () => {
-//     const getEnvironmentVariableMock = nock("https://api.github.com")
-//     .get(`/repositories/${repo.id}/environments/${repoEnvironment}/variables/${Object.keys(variables)[0]}`)
-//     .reply(200);
+    await setVariableForRepo(
+      octokit,
+      "FOO",
+      variables.FOO,
+      repo,
+      repoEnvironment,
+      false
+    );
 
-//     await setVariableForRepo(
-//       octokit,
-//       "FOO",
-//       variables.FOO,
-//       repo,
-//       repoEnvironment,
-//       false
-//     );
-
-//     expect(createEnvironmentVariableMock.isDone()).toBeFalsy();
-//     expect(updateEnvironmentVariableMock.isDone()).toBeTruthy();
-//   });
-// });
+    expect(createEnvironmentVariableMock.isDone()).toBeFalsy();
+    expect(updateEnvironmentVariableMock.isDone()).toBeTruthy();
+  });
+});
 
 describe("deleteVariableForRepo", () => {
   const repo = fixture[0].response;
