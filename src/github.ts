@@ -184,6 +184,17 @@ export async function getPublicKey(
       const [owner, name] = repo.full_name.split("/");
 
       switch (target) {
+        case "codespaces":
+          publicKey = (
+            await octokit.codespaces.getRepoPublicKey({
+              owner,
+              repo: name,
+            })
+          ).data as PublicKey;
+
+          publicKeyCache.set(repo, publicKey);
+
+          return publicKey;
         case "dependabot":
           publicKey = (
             await octokit.dependabot.getRepoPublicKey({
@@ -232,6 +243,14 @@ export async function setSecretForRepo(
 
   if (!dry_run) {
     switch (target) {
+      case "codespaces":
+        return octokit.codespaces.createOrUpdateRepoSecret({
+          owner: repo_owner,
+          repo: repo_name,
+          secret_name: name,
+          key_id: publicKey.key_id,
+          encrypted_value,
+        });
       case "dependabot":
         return octokit.dependabot.createOrUpdateRepoSecret({
           owner: repo_owner,
@@ -278,6 +297,10 @@ export async function deleteSecretForRepo(
     if (!dry_run) {
       const action = "DELETE";
       switch (target) {
+        case "codespaces":
+          return octokit.request(
+            `${action} /repos/${repo.full_name}/codespaces/secrets/${name}`
+          );
         case "dependabot":
           return octokit.request(
             `${action} /repos/${repo.full_name}/dependabot/secrets/${name}`

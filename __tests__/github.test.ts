@@ -135,8 +135,10 @@ describe("setSecretForRepo", () => {
 
   let actionsPublicKeyMock: nock.Scope;
   let dependabotPublicKeyMock: nock.Scope;
+  let codespacesPublicKeyMock: nock.Scope;
   let setActionsSecretMock: nock.Scope;
   let setDependabotSecretMock: nock.Scope;
+  let setCodespacesSecretMock: nock.Scope;
 
   beforeEach(() => {
     nock.cleanAll();
@@ -151,6 +153,10 @@ describe("setSecretForRepo", () => {
       .get(`/repos/${repo.full_name}/dependabot/secrets/public-key`)
       .reply(200, publicKey);
 
+    codespacesPublicKeyMock = nock("https://api.github.com")
+      .get(`/repos/${repo.full_name}/codespaces/secrets/public-key`)
+      .reply(200, publicKey);
+
     setActionsSecretMock = nock("https://api.github.com")
       .put(`/repos/${repo.full_name}/actions/secrets/FOO`, (body) => {
         expect(body.encrypted_value).toBeTruthy();
@@ -161,6 +167,14 @@ describe("setSecretForRepo", () => {
 
     setDependabotSecretMock = nock("https://api.github.com")
       .put(`/repos/${repo.full_name}/dependabot/secrets/FOO`, (body) => {
+        expect(body.encrypted_value).toBeTruthy();
+        expect(body.key_id).toEqual(publicKey.key_id);
+        return body;
+      })
+      .reply(200);
+
+    setCodespacesSecretMock = nock("https://api.github.com")
+      .put(`/repos/${repo.full_name}/codespaces/secrets/FOO`, (body) => {
         expect(body.encrypted_value).toBeTruthy();
         expect(body.key_id).toEqual(publicKey.key_id);
         return body;
@@ -192,6 +206,19 @@ describe("setSecretForRepo", () => {
       "dependabot"
     );
     expect(dependabotPublicKeyMock.isDone()).toBeTruthy();
+  });
+
+  test("setSecretForRepo with Codespaces target should retrieve public key for Codespaces", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      true,
+      "codespaces"
+    );
+    expect(codespacesPublicKeyMock.isDone()).toBeTruthy();
   });
 
   test("setSecretForRepo should not set secret with dry run", async () => {
@@ -232,6 +259,19 @@ describe("setSecretForRepo", () => {
       "dependabot"
     );
     expect(setDependabotSecretMock.isDone()).toBeTruthy();
+  });
+
+  test("setSecretForRepo with Codespaces target should call set secret endpoint for Codespaces", async () => {
+    await setSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      false,
+      "codespaces"
+    );
+    expect(setCodespacesSecretMock.isDone()).toBeTruthy();
   });
 });
 
@@ -336,6 +376,7 @@ describe("deleteSecretForRepo", () => {
   const secrets = { FOO: "BAR" };
   let deleteActionsSecretMock: nock.Scope;
   let deleteDependabotSecretMock: nock.Scope;
+  let deleteCodespacesSecretMock: nock.Scope;
 
   beforeEach(() => {
     nock.cleanAll();
@@ -346,6 +387,10 @@ describe("deleteSecretForRepo", () => {
 
     deleteDependabotSecretMock = nock("https://api.github.com")
       .delete(`/repos/${repo.full_name}/dependabot/secrets/FOO`)
+      .reply(200);
+
+    deleteCodespacesSecretMock = nock("https://api.github.com")
+      .delete(`/repos/${repo.full_name}/codespaces/secrets/FOO`)
       .reply(200);
   });
 
@@ -386,6 +431,19 @@ describe("deleteSecretForRepo", () => {
       "dependabot"
     );
     expect(deleteDependabotSecretMock.isDone()).toBeTruthy();
+  });
+
+  test("deleteSecretForRepo with Codespaces target should call set secret endpoint for Codespaces", async () => {
+    await deleteSecretForRepo(
+      octokit,
+      "FOO",
+      secrets.FOO,
+      repo,
+      "",
+      false,
+      "codespaces"
+    );
+    expect(deleteCodespacesSecretMock.isDone()).toBeTruthy();
   });
 });
 
