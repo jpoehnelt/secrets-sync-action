@@ -229,8 +229,6 @@ export async function setVariableForRepo(
         httpMethod = "POST";
       }
 
-      console.log("about to update repo var");
-
       try {
         await octokit.request(
           `${httpMethod} /repos/${repo_owner}/${repo_name}/actions/variables/${name}`,
@@ -244,8 +242,6 @@ export async function setVariableForRepo(
       } catch (error) {
         console.error(error);
       }
-
-      console.log("donezo");
     }
   }
 }
