@@ -186,29 +186,29 @@ function getRepos({ patterns, octokit, }) {
     });
 }
 exports.getRepos = getRepos;
-function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", pageSize = 30, }) {
+function listAllMatchingRepos({ patterns, octokit, affiliation = "owner,collaborator,organization_member", per_page = 30, }) {
     return __awaiter(this, void 0, void 0, function* () {
         const repos = yield listAllReposForAuthenticatedUser({
             octokit,
             affiliation,
-            pageSize,
+            per_page,
         });
         core.info(`Available repositories: ${JSON.stringify(repos.map((r) => r.full_name))}`);
         return filterReposByPatterns(repos, patterns);
     });
 }
 exports.listAllMatchingRepos = listAllMatchingRepos;
-function listAllReposForAuthenticatedUser({ octokit, affiliation, pageSize, }) {
+function listAllReposForAuthenticatedUser({ octokit, affiliation, per_page, }) {
     return __awaiter(this, void 0, void 0, function* () {
         const repos = [];
         for (let page = 1;; page++) {
             const response = yield octokit.repos.listForAuthenticatedUser({
                 affiliation,
                 page,
-                pageSize,
+                per_page,
             });
             repos.push(...response.data);
-            if (response.data.length < pageSize) {
+            if (response.data.length < per_page) {
                 break;
             }
         }
