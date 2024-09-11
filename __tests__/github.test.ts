@@ -53,7 +53,7 @@ afterAll(() => {
 });
 
 describe("listing repos from github", () => {
-  const pageSize = 3;
+  const per_page = 3;
   beforeEach(() => {
     nock("https://api.github.com")
       .get(/\/user\/repos?.*page=1.*/)
@@ -72,7 +72,7 @@ describe("listing repos from github", () => {
     const repos = await listAllMatchingRepos({
       patterns: [".*"],
       octokit,
-      pageSize,
+      per_page,
     });
 
     expect(repos.length).toEqual(3);
@@ -82,7 +82,7 @@ describe("listing repos from github", () => {
     const repos = await listAllMatchingRepos({
       patterns: ["octokit.*"],
       octokit,
-      pageSize,
+      per_page,
     });
 
     expect(repos.length).toEqual(3);
