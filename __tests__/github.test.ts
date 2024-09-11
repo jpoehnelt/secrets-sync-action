@@ -87,6 +87,47 @@ describe("listing repos from github", () => {
 
     expect(repos.length).toEqual(3);
   });
+
+  test("listAllReposAccessibleToInstallation matches patterns", async () => {
+    // Shadow original octokit with install token based one
+    const origConfig = config.getConfig();
+    (config.getConfig as jest.Mock).mockImplementation(() => ({
+      ...origConfig,
+      GITHUB_TOKEN: "ghs_installation_token",
+    }));
+    const octokit = DefaultOctokit({
+      auth: "",
+    });
+
+    // Setup app install endpoint
+    nock("https://api.github.com")
+      .get(/\/installation\/repositories?.*page=1.*/)
+      .reply(200, {
+        repositories: [
+          fixture[0].response,
+          fixture[0].response,
+          { archived: true, full_name: "foo/bar" },
+        ],
+      });
+
+    nock("https://api.github.com")
+      .get(/\/installation\/repositories?.*page=2.*/)
+      .reply(200, {
+        repositories: [
+          fixture[0].response,
+          fixture[0].response, // One more repo to distinguish installation endpoint from user endpoint
+        ],
+      });
+
+    // Query installation endpoint
+    const repos = await listAllMatchingRepos({
+      patterns: ["octokit.*"],
+      octokit,
+      per_page,
+    });
+
+    expect(repos.length).toEqual(4);
+  });
 });
 
 describe("getting single repos from github", () => {

@@ -110,11 +110,17 @@ export async function listAllMatchingRepos({
   affiliation?: string;
   per_page?: number;
 }): Promise<Repository[]> {
-  const repos = await listAllReposForAuthenticatedUser({
-    octokit,
-    affiliation,
-    per_page,
-  });
+  const usingInstallToken = getConfig().GITHUB_TOKEN.startsWith("ghs_");
+  const repos = await (usingInstallToken
+    ? listAllReposAccessibleToInstallation({
+        octokit,
+        per_page,
+      })
+    : listAllReposForAuthenticatedUser({
+        octokit,
+        affiliation,
+        per_page,
+      }));
 
   core.info(
     `Available repositories: ${JSON.stringify(repos.map((r) => r.full_name))}`
@@ -143,6 +149,29 @@ export async function listAllReposForAuthenticatedUser({
     repos.push(...response.data);
 
     if (response.data.length < per_page) {
+      break;
+    }
+  }
+  return repos.filter((r) => !r.archived);
+}
+
+export async function listAllReposAccessibleToInstallation({
+  octokit,
+  per_page,
+}: {
+  octokit: any;
+  per_page: number;
+}): Promise<Repository[]> {
+  const repos: Repository[] = [];
+
+  for (let page = 1; ; page++) {
+    const response = await octokit.apps.listReposAccessibleToInstallation({
+      page,
+      per_page,
+    });
+    repos.push(...response.data.repositories);
+
+    if (response.data.repositories.length < per_page) {
       break;
     }
   }
