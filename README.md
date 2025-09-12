@@ -24,7 +24,7 @@ Override default GitHub API URL. When not provided, the action will attempt to u
 
 ### `repositories_list_regex`
 
-If this value is `true` (default), the action will find all repositories available to the token user and filter based upon the regex provided. If it is `false`, it is expected that `repositories` will be a newline delimited list in the form of org/name.
+If this value is `true`, the action will find all repositories available to the token user and filter based upon the regex provided. If it is `false` (default), it is expected that `repositories` will be a newline delimited list in the form of org/name.
 
 ### `secrets`
 
