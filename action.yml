@@ -27,7 +27,7 @@ inputs:
     description: |
       If this value is `true`, the action will find all repositories
       available to the token user and filter based upon the regex provided. If
-      it is false, it is expected that `REPOSITORIES` will be an a new line
+      it is false (default), it is expected that `REPOSITORIES` will be an a new line
       deliminated list in the form of org/name.
     required: false
   secrets:
